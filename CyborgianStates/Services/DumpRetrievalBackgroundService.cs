@@ -129,7 +129,14 @@ namespace CyborgianStates.Services
                 var archiveFilename = $"{info.LastWriteTimeUtc.Year}-{info.LastWriteTimeUtc.Month:00}-{info.LastWriteTimeUtc.Day:00}-{dumpType.ToString().ToLower()}.xml.gz";
                 var targetFileName = Path.Combine(archiveDir, archiveFilename);
                 _logger.Information("Archiving {@fileName} to {@archiveFileName}", fileName, targetFileName);
-                File.Copy(fileName, targetFileName);
+                if (File.Exists(fileName))
+                {
+                    File.Copy(fileName, targetFileName);
+                }
+                else
+                {
+                    _logger.Warning("File ({@fileName}) to archive not found.", fileName);
+                }
             }
             else
             {
