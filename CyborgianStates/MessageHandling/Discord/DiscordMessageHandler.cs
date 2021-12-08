@@ -77,7 +77,7 @@ namespace CyborgianStates.MessageHandling
 
         internal Task HandleMessage(IMessage message)
         {
-            _logger.Verbose("ChannelId: {channelId} {name} {message}", message.Channel.Id, message.Channel.Name, message.Content);
+            _logger.Verbose("ChannelId: {channelId} {name} {message}", message.Channel?.Id, message.Channel?.Name, message.Content);
             if (message.Content.StartsWith(_settings.SeperatorChar))
             {
                 var usermsg = message as SocketUserMessage;

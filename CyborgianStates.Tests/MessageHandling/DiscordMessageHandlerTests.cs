@@ -76,11 +76,9 @@ namespace CyborgianStates.Tests.MessageHandling
             mockUser.SetupGet<ulong>(m => m.Id).Returns(0);
             mockMessage.SetupGet<IUser>(m => m.Author).Returns(mockUser.Object);
             mockMessage.SetupGet<string>(m => m.Content).Returns("test");
-#pragma warning disable CS4014 // Da auf diesen Aufruf nicht gewartet wird, wird die Ausführung der aktuellen Methode vor Abschluss des Aufrufs fortgesetzt.
-            handler.HandleMessage(mockMessage.Object);
+            await handler.HandleMessage(mockMessage.Object);
             mockMessage.SetupGet<string>(m => m.Content).Returns("$test");
-            handler.HandleMessage(mockMessage.Object);
-#pragma warning restore CS4014 // Da auf diesen Aufruf nicht gewartet wird, wird die Ausführung der aktuellen Methode vor Abschluss des Aufrufs fortgesetzt.
+            await handler.HandleMessage(mockMessage.Object);
         }
     }
 }

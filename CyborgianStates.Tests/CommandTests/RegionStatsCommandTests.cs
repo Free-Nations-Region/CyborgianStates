@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NationStatesSharp.Enums;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -56,8 +57,9 @@ namespace CyborgianStates.Tests.CommandTests
         {
             _dumpDataService.SetupGet(m => m.Status).Returns(Enums.DumpDataStatus.Ready);
             _dumpDataService.Setup(m => m.GetRegionByName(It.IsAny<string>())).Returns(new Data.Models.Dump.DumpRegion() { Delegate = "greenerica", Founder = "Testlandia" });
-            _dumpDataService.Setup(m => m.GetNationByName(It.Is<string>(m => m == "greenerica"))).Returns(new Data.Models.Dump.DumpNation() { UnescapedName = "Greenerica" });
+            _dumpDataService.Setup(m => m.GetNationByName(It.Is<string>(m => m == "greenerica"))).Returns(new Data.Models.Dump.DumpNation() { UnescapedName = "Greenerica", Endorsements = new List<string>() });
             _dumpDataService.Setup(m => m.GetNationByName(It.Is<string>(m => m.ToLower() == "testlandia"))).Returns(new Data.Models.Dump.DumpNation() { UnescapedName = "Testlandia" });
+            _dumpDataService.Setup(m => m.GetNationByName(It.Is<string>(m => m.ToLower() == "olvaria"))).Returns(new Data.Models.Dump.DumpNation() { UnescapedName = "Olvaria" });
             _dumpDataService.Setup(m => m.GetWANationsByRegionName(It.IsAny<string>())).Returns(Enumerable.Repeat(new DumpNation() { }, 4).ToList());
             _dumpDataService.Setup(m => m.GetEndoSumByRegionName(It.IsAny<string>())).Returns(4);
             var collection = ConfigureServices();
