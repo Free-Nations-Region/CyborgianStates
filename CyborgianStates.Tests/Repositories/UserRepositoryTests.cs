@@ -1,6 +1,6 @@
 ﻿using CyborgianStates.Data;
 using CyborgianStates.Interfaces;
-using CyborgianStates.Models;
+using CyborgianStates.Data.Models;
 using CyborgianStates.Repositories;
 using DataAbstractions.Dapper;
 using Microsoft.Extensions.Options;
@@ -12,6 +12,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using FluentAssertions;
 
 namespace CyborgianStates.Tests.Repositories
 {
@@ -50,7 +51,7 @@ namespace CyborgianStates.Tests.Repositories
             perm.Name = "Commands.Execute";
             var userPermissions = new List<dynamic>() { perm } as IEnumerable<dynamic>;
             var res = await PermissionTest("Commands.Execute", userPermissions, Enumerable.Empty<dynamic>()).ConfigureAwait(false);
-            Assert.True(res);
+            res.Should().BeTrue();
         }
 
         [Fact]
@@ -60,7 +61,7 @@ namespace CyborgianStates.Tests.Repositories
             perm.Name = "Commands.Execute";
             var rolePermissions = new List<dynamic>() { perm } as IEnumerable<dynamic>;
             var res = await PermissionTest("Commands.Execute", Enumerable.Empty<dynamic>(), rolePermissions).ConfigureAwait(false);
-            Assert.True(res);
+            res.Should().BeTrue();
         }
 
         [Fact]
@@ -70,7 +71,7 @@ namespace CyborgianStates.Tests.Repositories
             perm.Name = "Commands.*";
             var rolePermissions = new List<dynamic>() { perm } as IEnumerable<dynamic>;
             var res = await PermissionTest("Commands.Execute", Enumerable.Empty<dynamic>(), rolePermissions).ConfigureAwait(false);
-            Assert.True(res);
+            res.Should().BeTrue();
         }
 
         [Fact]
@@ -80,10 +81,10 @@ namespace CyborgianStates.Tests.Repositories
             perm.Name = "Commands.*";
             var userPermissions = new List<dynamic>() { perm } as IEnumerable<dynamic>;
             var res = await PermissionTest("Commands.Execute", userPermissions, Enumerable.Empty<dynamic>()).ConfigureAwait(false);
-            Assert.True(res);
+            res.Should().BeTrue();
             perm.Name = "Commands.Preview.*";
             res = await PermissionTest("Commands.Preview.Execute", userPermissions, Enumerable.Empty<dynamic>()).ConfigureAwait(false);
-            Assert.True(res);
+            res.Should().BeTrue();
         }
 
         [Fact]
@@ -117,7 +118,7 @@ namespace CyborgianStates.Tests.Repositories
             perm.Name = "Commands.Preview";
             var rolePermissions = new List<dynamic>() { perm } as IEnumerable<dynamic>;
             var res = await PermissionTest("Commands.Execute", Enumerable.Empty<dynamic>(), rolePermissions).ConfigureAwait(false);
-            Assert.False(res);
+            res.Should().BeFalse();
         }
 
         [Fact]
@@ -127,7 +128,7 @@ namespace CyborgianStates.Tests.Repositories
             perm.Name = "Commands.Preview.*";
             var rolePermissions = new List<dynamic>() { perm } as IEnumerable<dynamic>;
             var res = await PermissionTest("Commands.Execute", Enumerable.Empty<dynamic>(), rolePermissions).ConfigureAwait(false);
-            Assert.False(res);
+            res.Should().BeFalse();
         }
 
         [Fact]

@@ -4,7 +4,11 @@ using CyborgianStates.Enums;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
 using CyborgianStates.Services;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
+using NationStatesSharp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -18,6 +22,10 @@ namespace CyborgianStates.Tests.Services
         private Mock<IMessageHandler> msgHandlerMock;
         private Mock<IRequestDispatcher> requestDispatcherMock;
         private Mock<IUserRepository> userRepositoryMock;
+        private Mock<IOptions<AppSettings>> appSettingsMock;
+        private Mock<IBackgroundServiceRegistry> backgroundServiceRegistryMock;
+        private Mock<IDumpRetrievalService> dumpRetrievalServiceMock;
+        private Mock<IDumpDataService> dumpDataServiceMock;
 
         public BotServiceTests()
         {
@@ -27,45 +35,60 @@ namespace CyborgianStates.Tests.Services
             msgHandlerMock.Setup(m => m.ShutdownAsync()).Returns(Task.CompletedTask);
 
             requestDispatcherMock = new Mock<IRequestDispatcher>(MockBehavior.Strict);
-            requestDispatcherMock.Setup(r => r.Register(It.IsAny<DataSourceType>(), It.IsAny<IRequestQueue>())).Returns(() => Task.CompletedTask);
+            requestDispatcherMock.Setup(r => r.Start());
+            requestDispatcherMock.Setup(r => r.Shutdown());
 
             userRepositoryMock = new Mock<IUserRepository>(MockBehavior.Strict);
 
             msgChannelMock = new Mock<IMessageChannel>(MockBehavior.Strict);
-            msgChannelMock.SetupGet(m => m.IsPrivate).Returns(true);
+            appSettingsMock = new Mock<IOptions<AppSettings>>(MockBehavior.Strict);
+            appSettingsMock
+                .Setup(m => m.Value)
+                .Returns(new AppSettings() { });
+            backgroundServiceRegistryMock = new Mock<IBackgroundServiceRegistry>(MockBehavior.Strict);
+            backgroundServiceRegistryMock.Setup(m => m.Register(It.IsAny<IBackgroundService>()));
+            backgroundServiceRegistryMock.Setup(m => m.StartAsync()).Returns(Task.CompletedTask);
+            backgroundServiceRegistryMock.Setup(m => m.ShutdownAsync()).Returns(Task.CompletedTask);
+            dumpRetrievalServiceMock = new Mock<IDumpRetrievalService>(MockBehavior.Strict);
+            dumpDataServiceMock = new Mock<IDumpDataService>(MockBehavior.Strict);
+            ConfigureServices();
         }
 
-        [Fact]
-        public void TestBotServiceWithNullMessageHandler()
+        private IServiceProvider ConfigureServices()
         {
-            Assert.Throws<ArgumentNullException>(() => new BotService(null, requestDispatcherMock.Object, userRepositoryMock.Object));
-            Assert.Throws<ArgumentNullException>(() => new BotService(msgHandlerMock.Object, null, userRepositoryMock.Object));
-            Assert.Throws<ArgumentNullException>(() => new BotService(msgHandlerMock.Object, requestDispatcherMock.Object, null));
+            var services = new ServiceCollection();
+            services.AddSingleton<IMessageHandler>(msgHandlerMock.Object);
+            services.AddSingleton<IRequestDispatcher>(requestDispatcherMock.Object);
+            services.AddSingleton<IUserRepository>(userRepositoryMock.Object);
+            services.AddSingleton<IResponseBuilder, ConsoleResponseBuilder>();
+            services.AddSingleton<IOptions<AppSettings>>(appSettingsMock.Object);
+            services.AddSingleton<IBackgroundServiceRegistry>(backgroundServiceRegistryMock.Object);
+            services.AddSingleton<IDumpRetrievalService>(dumpRetrievalServiceMock.Object);
+            services.AddSingleton<IDumpDataService>(dumpDataServiceMock.Object);
+            return services.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true });
         }
 
         [Fact]
         public async Task TestInitRunAndShutDownBotService()
         {
-            Program.ServiceProvider = Program.ConfigureServices();
-            var botService = new BotService(msgHandlerMock.Object, requestDispatcherMock.Object, userRepositoryMock.Object);
+            var botService = new BotService(ConfigureServices());
             await botService.InitAsync().ConfigureAwait(false);
             await botService.RunAsync().ConfigureAwait(false);
-            Assert.True(botService.IsRunning);
+            botService.IsRunning.Should().BeTrue();
             await botService.ShutdownAsync().ConfigureAwait(false);
-            Assert.False(botService.IsRunning);
+            botService.IsRunning.Should().BeFalse();
         }
 
         [Fact]
         public async Task TestIsRelevant()
         {
-            Program.ServiceProvider = Program.ConfigureServices();
             userRepositoryMock.Setup(u => u.IsUserInDbAsync(It.IsAny<ulong>())).Returns(() => Task.FromResult(false));
             userRepositoryMock.Setup(u => u.AddUserToDbAsync(It.IsAny<ulong>())).Returns(() => Task.CompletedTask);
             userRepositoryMock.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ulong>())).Returns(() => Task.FromResult(true));
-            msgChannelMock.Setup(m => m.WriteToAsync(It.IsAny<bool>(), It.IsAny<CommandResponse>())).Returns(Task.CompletedTask);
+            msgChannelMock.Setup(m => m.WriteToAsync(It.IsAny<CommandResponse>())).Returns(Task.CompletedTask);
 
             Message message = new Message(0, "test", msgChannelMock.Object);
-            var botService = new BotService(msgHandlerMock.Object, requestDispatcherMock.Object, userRepositoryMock.Object);
+            var botService = new BotService(ConfigureServices());
             await botService.InitAsync().ConfigureAwait(false);
             await botService.RunAsync().ConfigureAwait(false);
 
@@ -89,6 +112,7 @@ namespace CyborgianStates.Tests.Services
         [Fact]
         public async Task TestStartupProgressMessageAndShutDown()
         {
+            Program.ServiceProvider = Program.ConfigureServices();
             userRepositoryMock.Setup(u => u.IsUserInDbAsync(It.IsAny<ulong>())).Returns(() => Task.FromResult(true));
             userRepositoryMock.Setup(u => u.AddUserToDbAsync(It.IsAny<ulong>())).Returns(() => Task.CompletedTask);
             userRepositoryMock.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ulong>())).Returns(() => Task.FromResult(true));
@@ -96,48 +120,36 @@ namespace CyborgianStates.Tests.Services
             CommandHandler.Clear();
             CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
 
-            Assert.True(CommandHandler.Count == 1);
+            CommandHandler.Count.Should().Be(1);
 
-            var botService = new BotService(msgHandlerMock.Object, requestDispatcherMock.Object, userRepositoryMock.Object);
+            var botService = new BotService(ConfigureServices());
             await botService.InitAsync().ConfigureAwait(false);
             await botService.RunAsync().ConfigureAwait(false);
 
-            Assert.True(botService.IsRunning);
+            botService.IsRunning.Should().BeTrue();
             msgHandlerMock.Verify(m => m.InitAsync(), Times.Once);
             msgHandlerMock.Verify(m => m.RunAsync(), Times.Once);
 
-            bool isPublic = false;
             CommandResponse commandResponse = new CommandResponse(CommandStatus.Error, "");
 
-            msgChannelMock.Setup(m => m.WriteToAsync(It.IsAny<bool>(), It.IsAny<CommandResponse>()))
-                .Callback<bool, CommandResponse>((b, cr) =>
-                {
-                    isPublic = b;
-                    commandResponse = cr;
-                })
+            msgChannelMock.Setup(m => m.ReplyToAsync(It.IsAny<Message>(), It.IsAny<CommandResponse>()))
+                .Callback<Message, CommandResponse>((m, cr) =>
+                 {
+                     commandResponse = cr;
+                 })
                 .Returns(Task.CompletedTask);
 
             Message message = new Message(0, "ping", msgChannelMock.Object);
             MessageReceivedEventArgs eventArgs = new MessageReceivedEventArgs(message);
             msgHandlerMock.Raise(m => m.MessageReceived += null, this, eventArgs);
-
-            message = new Message(0, "test", msgChannelMock.Object);
-            eventArgs = new MessageReceivedEventArgs(message);
-            msgHandlerMock.Raise(m => m.MessageReceived += null, this, eventArgs);
-
-            message = new Message(1, "test", msgChannelMock.Object);
-            eventArgs = new MessageReceivedEventArgs(message);
-            msgHandlerMock.Raise(m => m.MessageReceived += null, this, eventArgs);
+            commandResponse.Status.Should().Be(CommandStatus.Success);
+            commandResponse.Content.Should().Be("Pong !");
 
             await Task.Delay(1000).ConfigureAwait(false);
 
-            Assert.True(isPublic);
-            Assert.Equal(CommandStatus.Success, commandResponse.Status);
-            Assert.Equal("Pong !", commandResponse.Content);
-
             await botService.ShutdownAsync().ConfigureAwait(false);
 
-            Assert.False(botService.IsRunning);
+            botService.IsRunning.Should().BeFalse();
             msgHandlerMock.Verify(m => m.ShutdownAsync(), Times.Once);
         }
     }

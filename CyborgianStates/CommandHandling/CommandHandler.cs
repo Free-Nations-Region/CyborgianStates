@@ -10,28 +10,28 @@ namespace CyborgianStates.CommandHandling
 {
     public static class CommandHandler
     {
-        private static readonly List<CommandDefinition> definitions = new List<CommandDefinition>();
-        private static readonly CancellationTokenSource tokenSource = new CancellationTokenSource();
-        public static int Count { get => definitions.Count; }
+        private static readonly List<CommandDefinition> _definitions = new List<CommandDefinition>();
+        private static readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
+        public static int Count { get => _definitions.Count; }
 
         public static void Cancel()
         {
-            tokenSource.Cancel();
+            _tokenSource.Cancel();
         }
 
         public static void Clear()
         {
-            definitions.Clear();
+            _definitions.Clear();
         }
 
-        public static async Task<CommandResponse> Execute(Message message)
+        public static async Task<CommandResponse> ExecuteAsync(Message message)
         {
             if (message is null)
             {
                 throw new ArgumentNullException(nameof(message));
             }
             string trigger = message.Content.Contains(' ', StringComparison.InvariantCulture) ? message.Content.Split(' ')[0] : message.Content;
-            ICommand command = await Resolve(trigger).ConfigureAwait(false);
+            ICommand command = await ResolveAsync(trigger).ConfigureAwait(false);
             if (command != null)
             {
                 return await command.Execute(message).ConfigureAwait(false);
@@ -56,20 +56,20 @@ namespace CyborgianStates.CommandHandling
             {
                 throw new InvalidOperationException("The passed CommandDefinition was invalid. The provided Type is required to implement the CyborgianStates.Interfaces.ICommand Interface.");
             }
-            definitions.Add(definition);
+            _definitions.Add(definition);
         }
 
-        public static async Task<ICommand> Resolve(string trigger)
+        public static async Task<ICommand> ResolveAsync(string trigger)
         {
             if (string.IsNullOrWhiteSpace(trigger))
             {
                 throw new ArgumentNullException(nameof(trigger));
             }
-            var def = definitions.Where(cd => cd.Trigger.Contains(trigger)).FirstOrDefault();
+            var def = _definitions.Where(cd => cd.Trigger.Contains(trigger)).FirstOrDefault();
             if (def != null)
             {
                 ICommand instance = (ICommand)Activator.CreateInstance(def.Type);
-                instance.SetCancellationToken(tokenSource.Token);
+                instance.SetCancellationToken(_tokenSource.Token);
                 return await Task.FromResult(instance).ConfigureAwait(false);
             }
             else

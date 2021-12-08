@@ -7,5 +7,6 @@ namespace CyborgianStates.Interfaces
         bool IsRunning { get; }
 
         Task RunAsync();
+        Task ShutdownAsync();
     }
 }

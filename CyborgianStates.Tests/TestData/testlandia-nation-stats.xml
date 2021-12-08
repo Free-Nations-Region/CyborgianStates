@@ -1,0 +1,40 @@
+<NATION id="testlandia">
+	<FULLNAME>The дСвобода Мысл of Testlandia</FULLNAME>
+	<CATEGORY>New York Times Democracy</CATEGORY>
+	<UNSTATUS>WA Member</UNSTATUS>
+	<GAVOTE>UNDECIDED</GAVOTE>
+	<SCVOTE>UNDECIDED</SCVOTE>
+	<FREEDOM>
+		<CIVILRIGHTS>Excellent</CIVILRIGHTS>
+		<ECONOMY>Very Strong</ECONOMY>
+		<POLITICALFREEDOM>Superb</POLITICALFREEDOM>
+	</FREEDOM>
+	<REGION>Testregionia</REGION>
+	<POPULATION>38068</POPULATION>
+	<FLAG>https://www.nationstates.net/images/flags/uploads/testlandia__632510.png</FLAG>
+	<DEMONYM2PLURAL>Testlandians</DEMONYM2PLURAL>
+	<FOUNDED>0</FOUNDED>
+	<FOUNDEDTIME>0</FOUNDEDTIME>
+	<LASTACTIVITY>7 hours ago</LASTACTIVITY>
+	<INFLUENCE>Eminence Grise</INFLUENCE>
+	<CENSUS>
+		<SCALE id="0">
+			<SCORE>69.19</SCORE>
+		</SCALE>
+		<SCALE id="1">
+			<SCORE>80.00</SCORE>
+		</SCALE>
+		<SCALE id="2">
+			<SCORE>76.29</SCORE>
+		</SCALE>
+		<SCALE id="65">
+			<SCORE>6106.00</SCORE>
+		</SCALE>
+		<SCALE id="66">
+			<SCORE>0.00</SCORE>
+		</SCALE>
+		<SCALE id="80">
+			<SCORE>99.94290131428</SCORE>
+		</SCALE>
+	</CENSUS>
+</NATION>

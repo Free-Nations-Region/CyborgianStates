@@ -6,6 +6,6 @@ namespace CyborgianStates.Interfaces
 {
     public interface IHttpDataService
     {
-        Task<HttpResponseMessage> ExecuteRequest(HttpRequestMessage httpRequest, EventId eventId);
+        Task<HttpResponseMessage> ExecuteRequestAsync(HttpRequestMessage httpRequest, EventId eventId);
     }
 }

@@ -1,9 +1,12 @@
 ﻿using CyborgianStates.CommandHandling;
 using CyborgianStates.Interfaces;
+using CyborgianStates;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using NationStatesSharp;
+using NationStatesSharp.Interfaces;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -18,28 +21,10 @@ namespace CyborgianStates.Tests
         [Fact]
         public void TestGetEventId()
         {
-            var res = Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
-            Assert.IsType<EventId>(res);
-            Assert.Equal(10300, res.Id);
-            Assert.Equal("GetNationStats", res.Name);
-        }
-
-        [Fact]
-        public void TestGetLoggerByName()
-        {
-            ILogger logger = ApplicationLogging.CreateLogger("TestLogger");
-            Type type = logger.GetType();
-            Assert.Equal("Logger", type.Name);
-            Assert.Equal("Microsoft.Extensions.Logging.Logger", type.FullName);
-        }
-
-        [Fact]
-        public void TestGetLoggerByType()
-        {
-            ILogger logger = ApplicationLogging.CreateLogger(typeof(Program));
-            Type type = logger.GetType();
-            Assert.Equal("Logger", type.Name);
-            Assert.Equal("Microsoft.Extensions.Logging.Logger", type.FullName);
+            var res = CyborgianStates.Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
+            res.Should().BeOfType<EventId>();
+            res.Id.Should().Be(10300);
+            res.Name.Should().Be("GetNationStats");
         }
 
         [Fact]
@@ -48,34 +33,33 @@ namespace CyborgianStates.Tests
             using (var res = new HttpResponseMessage(HttpStatusCode.OK))
             {
                 res.Content = new StringContent("<test>test</test>");
-                var ret = await res.ReadXml().ConfigureAwait(false);
+                var ret = await res.ReadXmlAsync().ConfigureAwait(false);
                 ret.Should().BeOfType<XmlDocument>();
             }
             using (var res = new HttpResponseMessage(HttpStatusCode.OK))
             {
                 res.Content = new StringContent("<test>test</test");
-                await Assert.ThrowsAsync<ApplicationException>(async () => { await res.ReadXml().ConfigureAwait(false); }).ConfigureAwait(false);
+                await Assert.ThrowsAsync<ApplicationException>(async () => { await res.ReadXmlAsync().ConfigureAwait(false); }).ConfigureAwait(false);
             }
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => { await HttpExtensions.ReadXml(null).ConfigureAwait(false); }).ConfigureAwait(false);
-        }
-
-        [Fact]
-        public void TestHttpExtensionsUserAgent()
-        {
-            Assert.Throws<ArgumentNullException>(() => HttpExtensions.AddCyborgianStatesUserAgent(null, "", ""));
+            using (var res = new HttpResponseMessage(HttpStatusCode.NotFound))
+            {
+                var ret = await res.ReadXmlAsync().ConfigureAwait(false);
+                ret.Should().BeNull();
+            }
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => { await HttpExtensions.ReadXmlAsync(null).ConfigureAwait(false); }).ConfigureAwait(false);
         }
 
         [Fact]
         public void TestIdMethods()
         {
-            var res = Helpers.ToID("Hello World");
-            Assert.Equal("hello_world", res);
-            res = Helpers.FromID(res);
-            Assert.Equal("hello world", res);
-            res = Helpers.FromID(null);
-            Assert.Null(res);
-            res = Helpers.ToID(null);
-            Assert.Null(res);
+            var res = CyborgianStates.Helpers.ToID("Hello World");
+            res.Should().Be("hello_world");
+            res = CyborgianStates.Helpers.FromID(res);
+            res.Should().Be("hello world");
+            res = CyborgianStates.Helpers.FromID(null);
+            res.Should().BeNull();
+            res = CyborgianStates.Helpers.ToID(null);
+            res.Should().BeNull();
         }
 
         [Fact]
@@ -86,25 +70,32 @@ namespace CyborgianStates.Tests
             var botService = new Mock<IBotService>(MockBehavior.Strict);
             botService.Setup(m => m.InitAsync()).Returns(Task.CompletedTask);
             botService.Setup(m => m.RunAsync()).Returns(Task.CompletedTask);
+            botService.Setup(m => m.ShutdownAsync()).Returns(Task.CompletedTask);
             serviceCollection.AddSingleton(typeof(IMessageHandler), messageHandler.Object);
             serviceCollection.AddSingleton(typeof(IBotService), botService.Object);
-            serviceCollection.AddSingleton<IRequestDispatcher, RequestDispatcher>();
+            var requestDispatcher = new RequestDispatcher("(test)");
+            serviceCollection.AddSingleton(typeof(IRequestDispatcher), requestDispatcher);
             Launcher launcher = new Launcher();
             Program.ServiceProvider = serviceCollection.BuildServiceProvider();
             await launcher.RunAsync().ConfigureAwait(false);
-            Assert.True(launcher.IsRunning);
+            launcher.IsRunning.Should().BeTrue();
             botService.Verify(m => m.RunAsync(), Times.Once);
+            var envMock = new Mock<BotEnvironment>(MockBehavior.Strict);
+            envMock.Setup(m => m.Exit(It.IsAny<int>()));
+            launcher.SetEnv(envMock.Object);
+            await launcher.ShutdownAsync();
         }
 
         [Fact]
         public void TestLogMessageBuilder()
         {
-            var res = Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
-            Assert.IsType<EventId>(res);
-            Assert.Equal(10300, res.Id);
-            Assert.Equal("GetNationStats", res.Name);
+            
+            var res = CyborgianStates.Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
+            res.Should().BeOfType<EventId>();
+            res.Id.Should().Be(10300);
+            res.Name.Should().Be("GetNationStats");
             var logString = LogMessageBuilder.Build(res, "Test");
-            Assert.Equal("[10300] Test", logString);
+            logString.Should().Be("[10300] Test");
         }
 
         [Fact]
@@ -123,7 +114,19 @@ namespace CyborgianStates.Tests
             Program.SetMessageHandler(messageHandler);
             await Program.Main().ConfigureAwait(false);
             mock.Verify(l => l.RunAsync(), Times.Once);
-            Assert.True(launcher.IsRunning);
+            launcher.IsRunning.Should().BeTrue();
+        }
+
+        [Fact]
+        public void TestConfigureServicesDiscordPath()
+        {
+            Program.InputChannel = "Discord";
+            Program.ConfigureServices();
+            Program.InputChannel = "test";
+            Assert.Throws<InvalidOperationException>(() => Program.ConfigureServices());
+            Program.InputChannel = "Console";
+            Program.ConfigureServices();
+            Program.InputChannel = string.Empty;
         }
 
         [Fact]
@@ -140,7 +143,7 @@ namespace CyborgianStates.Tests
             Program.SetMessageHandler(messageHandler);
             await Program.Main().ConfigureAwait(false);
             mock.Verify(l => l.RunAsync(), Times.Once);
-            Assert.True(launcher.IsRunning);
+            launcher.IsRunning.Should().BeTrue();
         }
     }
 }

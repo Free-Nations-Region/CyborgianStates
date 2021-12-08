@@ -1,5 +1,5 @@
-﻿using CyborgianStates.Models;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using CyborgianStates.Data.Models;
 
 namespace CyborgianStates.Interfaces
 {

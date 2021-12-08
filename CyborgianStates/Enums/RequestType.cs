@@ -3,6 +3,7 @@
     public enum RequestType
     {
         UnitTest,
-        GetBasicNationStats
+        GetBasicNationStats,
+        GetRegionalOfficers
     }
 }

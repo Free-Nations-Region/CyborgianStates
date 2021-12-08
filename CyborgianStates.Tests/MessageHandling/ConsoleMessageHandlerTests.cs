@@ -1,5 +1,6 @@
 ﻿using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using FluentAssertions;
 using Moq;
 using System;
 using System.Threading.Tasks;
@@ -20,11 +21,11 @@ namespace CyborgianStates.Tests.MessageHandling
             await consoleMessageHandler.InitAsync().ConfigureAwait(false);
             var task = Task.Run(async () => await consoleMessageHandler.RunAsync().ConfigureAwait(false));
             await Task.Delay(50).ConfigureAwait(false);
-            Assert.True(consoleMessageHandler.IsRunning);
+            consoleMessageHandler.IsRunning.Should().BeTrue();
             mockInput.Verify(m => m.GetInput(), Times.AtLeastOnce);
             await consoleMessageHandler.ShutdownAsync().ConfigureAwait(false);
             task.Wait();
-            Assert.False(consoleMessageHandler.IsRunning);
+            consoleMessageHandler.IsRunning.Should().BeFalse();
         }
 
         [Fact]
@@ -37,11 +38,11 @@ namespace CyborgianStates.Tests.MessageHandling
             await consoleMessageHandler.InitAsync().ConfigureAwait(false);
             var task = Task.Run(async () => await consoleMessageHandler.RunAsync().ConfigureAwait(false));
             await Task.Delay(1000).ConfigureAwait(false);
-            Assert.True(consoleMessageHandler.IsRunning);
+            consoleMessageHandler.IsRunning.Should().BeTrue();
             mockInput.Verify(m => m.GetInput(), Times.AtLeastOnce);
             await consoleMessageHandler.ShutdownAsync().ConfigureAwait(false);
             task.Wait();
-            Assert.False(consoleMessageHandler.IsRunning);
+            consoleMessageHandler.IsRunning.Should().BeFalse();
         }
 
         private void ConsoleMessageHandler_MessageReceived(object sender, MessageReceivedEventArgs e)

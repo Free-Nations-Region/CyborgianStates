@@ -2,6 +2,7 @@ using CyborgianStates.CommandHandling;
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using FluentAssertions;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,23 +17,23 @@ namespace CyborgianStates.Tests.CommandHandling
         {
             CommandHandler.Clear();
             CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
-            var result = await CommandHandler.Execute(new Message(0, "ping ", new ConsoleMessageChannel(false))).ConfigureAwait(false);
-            Assert.True(result is CommandResponse);
-            Assert.Equal(CommandStatus.Success, result.Status);
+            var result = await CommandHandler.ExecuteAsync(new Message(0, "ping ", new ConsoleMessageChannel())).ConfigureAwait(false);
+            result.Should().BeOfType<CommandResponse>();
+            result.Status.Should().Be(CommandStatus.Success);
         }
 
         [Fact]
         public void TestExecuteWithEmptyMessage()
         {
-            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.Execute(null));
+            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.ExecuteAsync(null));
         }
 
         [Fact]
         public async Task TestExecuteWithUnresolveableMessage()
         {
             CommandHandler.Clear();
-            var result = await CommandHandler.Execute(new Message(0, "unknown ", new ConsoleMessageChannel(false))).ConfigureAwait(false);
-            Assert.Null(result);
+            var result = await CommandHandler.ExecuteAsync(new Message(0, "unknown ", new ConsoleMessageChannel())).ConfigureAwait(false);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -40,7 +41,7 @@ namespace CyborgianStates.Tests.CommandHandling
         {
             CommandHandler.Clear();
             CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
-            Assert.True(CommandHandler.Count == 1, $"Expected CommandCount to be 1 but was: {CommandHandler.Count}");
+            CommandHandler.Count.Should().Be(1);
         }
 
         [Fact]
@@ -57,23 +58,23 @@ namespace CyborgianStates.Tests.CommandHandling
         {
             CommandHandler.Clear();
             CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
-            var resolved = await CommandHandler.Resolve("ping").ConfigureAwait(false);
-            Assert.True(resolved is PingCommand);
+            var resolved = await CommandHandler.ResolveAsync("ping").ConfigureAwait(false);
+            resolved.Should().BeOfType<PingCommand>();
         }
 
         [Fact]
         public async Task TestResolveUnknownCommand()
         {
-            var result = await CommandHandler.Resolve("unknownCommand").ConfigureAwait(false);
-            Assert.Null(result);
+            var result = await CommandHandler.ResolveAsync("unknownCommand").ConfigureAwait(false);
+            result.Should().BeNull();
         }
 
         [Fact]
         public void TestResolveWithEmptyTrigger()
         {
-            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.Resolve(null));
-            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.Resolve(string.Empty));
-            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.Resolve("    "));
+            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.ResolveAsync(null));
+            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.ResolveAsync(string.Empty));
+            Assert.ThrowsAsync<ArgumentNullException>(() => CommandHandler.ResolveAsync("    "));
         }
     }
 }

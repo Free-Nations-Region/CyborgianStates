@@ -1,0 +1,36 @@
+<REGION id="testregionia">
+	<OFFICERS>
+		<OFFICER>
+			<NATION>a_badly_conceived_designation</NATION>
+			<OFFICE>Vice-Tester</OFFICE>
+			<AUTHORITY>ACP</AUTHORITY>
+			<TIME>1472595630</TIME>
+			<BY>testlandia</BY>
+			<ORDER>4</ORDER>
+		</OFFICER>
+		<OFFICER>
+			<NATION>iron_fist_grizzlies</NATION>
+			<OFFICE>Vice-Delegate</OFFICE>
+			<AUTHORITY>ABCEP</AUTHORITY>
+			<TIME>1444695139</TIME>
+			<BY>testlandia</BY>
+			<ORDER>2</ORDER>
+		</OFFICER>
+		<OFFICER>
+			<NATION>olvaria</NATION>
+			<OFFICE>Tester-in-Chief</OFFICE>
+			<AUTHORITY>ABCEP</AUTHORITY>
+			<TIME>1444695006</TIME>
+			<BY>testlandia</BY>
+			<ORDER>1</ORDER>
+		</OFFICER>
+		<OFFICER>
+			<NATION>testlandia</NATION>
+			<OFFICE>&amp;lt;h1&amp;gt;Field Tester&amp;lt;/h1&amp;gt;</OFFICE>
+			<AUTHORITY>B</AUTHORITY>
+			<TIME>1597897244</TIME>
+			<BY>testlandia</BY>
+			<ORDER>4</ORDER>
+		</OFFICER>
+	</OFFICERS>
+</REGION>

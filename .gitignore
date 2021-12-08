@@ -348,9 +348,9 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-/CyborgianStates/appsettings.development.json
-
+appsettings.development.json
+appsettings.production.json
 # Ignore JetBrains files
 .idea
-/CyborgianStates/*.db
-/CyborgianStates/*.db-journal
+*.db
+*.db-journal
