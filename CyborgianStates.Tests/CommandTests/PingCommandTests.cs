@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CyborgianStates.Tests
+namespace CyborgianStates.Tests.CommandTests
 {
     public class PingCommandTests
     {

@@ -41,7 +41,7 @@ namespace CyborgianStates.MessageHandling
             if (message is null)
                 throw new ArgumentNullException(nameof(message));
             currentChannel = !isPublic && !_isPrivateChannel
-                ? message.MessageObject is SocketCommandContext Context ? await Context.User.GetOrCreateDMChannelAsync().ConfigureAwait(false) : _channel
+                ? message.MessageObject is SocketCommandContext Context ? await Context.User.CreateDMChannelAsync().ConfigureAwait(false) : _channel
                 : _channel;
             await WriteToAsync(content).ConfigureAwait(false);
         }
@@ -53,7 +53,7 @@ namespace CyborgianStates.MessageHandling
             if (response is null)
                 throw new ArgumentNullException(nameof(response));
             currentChannel = !isPublic && !_isPrivateChannel
-                ? message.MessageObject is SocketCommandContext Context ? await Context.User.GetOrCreateDMChannelAsync().ConfigureAwait(false) : _channel
+                ? message.MessageObject is SocketCommandContext Context ? await Context.User.CreateDMChannelAsync().ConfigureAwait(false) : _channel
                 : _channel;
             await WriteToAsync(response).ConfigureAwait(false);
         }

@@ -7,14 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CyborgianStates.Tests.CommandHandling
+namespace CyborgianStates.Tests.Helpers
 {
-    public class RequestMockWrapper
-    {
-        public RequestStatus Status { get; init; }
-        public object Response { get; init; }
-        public Exception Exception { get; init; }
-    }
 
     public class TestRequestDispatcher : IRequestDispatcher
     {
@@ -39,23 +33,15 @@ namespace CyborgianStates.Tests.CommandHandling
             }
             else
             {
-                if (requests.Any())
+                var mockRequest = requests.Take(1).First();
+                requests.Remove(mockRequest);
+                if (mockRequest.Status == RequestStatus.Success)
                 {
-                    var mockRequest = requests.Take(1).First();
-                    requests.Remove(mockRequest);
-                    if (mockRequest.Status == RequestStatus.Success)
-                    {
-                        request.Complete(mockRequest.Response);
-                    }
-                    else if (mockRequest.Status == RequestStatus.Failed)
-                    {
-                        request.Fail(mockRequest.Exception);
-                    }
+                    request.Complete(mockRequest.Response);
                 }
-                else
+                else if (mockRequest.Status == RequestStatus.Failed)
                 {
-                    var reason = $"No request has been prepared.";
-                    request.Fail(new InvalidOperationException(reason));
+                    request.Fail(mockRequest.Exception);
                 }
             }
         }
