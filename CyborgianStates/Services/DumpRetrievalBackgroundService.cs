@@ -55,10 +55,6 @@ namespace CyborgianStates.Services
                 _logger.Information("--- Dump Retrieval completed ---");
                 if (_successfullyUpdated ?? false)
                 {
-                    //await Task.Run(async () =>
-                    //{
-                        
-                    //}).ConfigureAwait(false);
                     await _dumpDataService.UpdateAsync().ConfigureAwait(false);
                 }
             }
