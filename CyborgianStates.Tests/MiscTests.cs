@@ -1,5 +1,6 @@
 ﻿using CyborgianStates.CommandHandling;
 using CyborgianStates.Interfaces;
+using CyborgianStates;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ namespace CyborgianStates.Tests
         [Fact]
         public void TestGetEventId()
         {
-            var res = Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
+            var res = CyborgianStates.Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
             res.Should().BeOfType<EventId>();
             res.Id.Should().Be(10300);
             res.Name.Should().Be("GetNationStats");
@@ -51,13 +52,13 @@ namespace CyborgianStates.Tests
         [Fact]
         public void TestIdMethods()
         {
-            var res = Helpers.ToID("Hello World");
+            var res = CyborgianStates.Helpers.ToID("Hello World");
             res.Should().Be("hello_world");
-            res = Helpers.FromID(res);
+            res = CyborgianStates.Helpers.FromID(res);
             res.Should().Be("hello world");
-            res = Helpers.FromID(null);
+            res = CyborgianStates.Helpers.FromID(null);
             res.Should().BeNull();
-            res = Helpers.ToID(null);
+            res = CyborgianStates.Helpers.ToID(null);
             res.Should().BeNull();
         }
 
@@ -88,7 +89,8 @@ namespace CyborgianStates.Tests
         [Fact]
         public void TestLogMessageBuilder()
         {
-            var res = Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
+            
+            var res = CyborgianStates.Helpers.GetEventIdByType(Enums.LoggingEvent.GetNationStats);
             res.Should().BeOfType<EventId>();
             res.Id.Should().Be(10300);
             res.Name.Should().Be("GetNationStats");

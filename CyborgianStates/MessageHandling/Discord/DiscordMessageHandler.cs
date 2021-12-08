@@ -6,9 +6,9 @@ using CyborgianStates.Interfaces;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Events;
 using ILogger = Serilog.ILogger;
 
 namespace CyborgianStates.MessageHandling
@@ -77,6 +77,10 @@ namespace CyborgianStates.MessageHandling
 
         internal Task HandleMessage(IMessage message)
         {
+            if (_logger.IsEnabled(LogEventLevel.Verbose))
+            {
+                _logger.Verbose("ChannelId: {channelId} {name} {message}", message.Channel?.Id, message.Channel?.Name, message.Content);
+            }
             if (message.Content.StartsWith(_settings.SeperatorChar))
             {
                 var usermsg = message as SocketUserMessage;

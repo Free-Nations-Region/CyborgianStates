@@ -90,8 +90,7 @@ namespace CyborgianStates.Commands
         private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
         {
             _responseBuilder.Clear();
-            _responseBuilder.WithColor(Discord.Color.Red)
-                .FailWithDescription(reason)
+            _responseBuilder.FailWithDescription(reason)
                 .WithFooter(_config.Footer);
             var response = _responseBuilder.Build();
             await message.Channel.ReplyToAsync(message, response).ConfigureAwait(false);
