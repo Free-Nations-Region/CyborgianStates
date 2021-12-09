@@ -13,6 +13,8 @@ namespace CyborgianStates.CommandHandling
         private static readonly List<CommandDefinition> _definitions = new List<CommandDefinition>();
         private static readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
         public static int Count { get => _definitions.Count; }
+        public static IReadOnlyList<CommandDefinition> Definitions => _definitions;
+
 
         public static void Cancel()
         {

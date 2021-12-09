@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Discord;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -14,5 +15,18 @@ namespace CyborgianStates.CommandHandling
 
         public ReadOnlyCollection<string> Trigger { get; }
         public Type Type { get; }
+
+        public bool IsSlashCommand { get; init; }
+        public string Name { get; init; }
+        public string Description { get; init; }
+        public IReadOnlyList<SlashCommandParameter> SlashCommandParameters { get; init; }
+    }
+
+    public class SlashCommandParameter
+    {
+        public string Name { get; init; }
+        public ApplicationCommandOptionType Type { get; init; }
+        public bool IsRequired { get; init; }
+        public string Description { get; init; }
     }
 }

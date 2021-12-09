@@ -2,6 +2,8 @@
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using Discord;
+using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -74,8 +76,18 @@ namespace CyborgianStates.Services
 
         private static void RegisterCommands()
         {
-            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
-            CommandHandler.Register(new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" }));
+            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { Name = "ping", Description = "Pong's you, lol.", IsSlashCommand = true });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" }) 
+                {
+                    Name = "nation", 
+                    Description = "Gets you some cool info about a NationStates Nation.", 
+                    IsSlashCommand = true, 
+                    SlashCommandParameters = new List<SlashCommandParameter> 
+                    {
+                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
+                    }
+                });
             CommandHandler.Register(new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" }));
             CommandHandler.Register(new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" }));
         }
@@ -108,6 +120,17 @@ namespace CyborgianStates.Services
                         if (result == null)
                         {
                             _logger.Error($"Unknown command trigger {e.Message.Content}");
+                            if (e.Message.MessageObject is SocketSlashCommand command)
+                            {
+                                //await command.RespondAsync(text: "Hmm...That didn't work. I don't know what to do. This is not intended. Please contact BotAdmin to get this fixed.").ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (e.Message.MessageObject is SocketSlashCommand command)
+                        {
+                            //await command.RespondAsync(text: "Hmm...You don't seem to have the permission to execute that command. Sorry. :(").ConfigureAwait(false);
                         }
                     }
                 }

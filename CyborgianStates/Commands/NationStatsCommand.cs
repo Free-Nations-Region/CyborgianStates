@@ -8,6 +8,7 @@ using CyborgianStates.CommandHandling;
 using CyborgianStates.Enums;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -52,16 +53,19 @@ namespace CyborgianStates.Commands
                 if (parameters.Any())
                 {
                     string nationName = Helpers.ToID(string.Join(" ", parameters));
-                    var request = new Request($"nation={nationName}&q=flag+wa+gavote+scvote+fullname+freedom+demonym2plural+category+population+region+founded+foundedtime+influence+lastactivity+census;mode=score;scale=0+1+2+65+66+80", ResponseFormat.Xml);
-                    _dispatcher.Dispatch(request, 0);
-                    await request.WaitForResponseAsync(token).ConfigureAwait(false);
-                    await ProcessResultAsync(request, nationName).ConfigureAwait(false);
-                    CommandResponse commandResponse = _responseBuilder.Build();
-                    await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
-                    return commandResponse;
+                    return await GetNationStatsResponseAsync(message, nationName).ConfigureAwait(false);
                 }
                 else
                 {
+                    if(message.MessageObject is SocketSlashCommand command)
+                    {
+                        var commandParams = command.Data.Options;
+                        var nationName = commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
+                        if (!string.IsNullOrWhiteSpace(nationName.ToString()))
+                        {
+                            return await GetNationStatsResponseAsync(message, nationName.ToString()).ConfigureAwait(false);
+                        }
+                    }
                     return await FailCommandAsync(message, "No parameter passed.").ConfigureAwait(false);
                 }
             }
@@ -80,6 +84,17 @@ namespace CyborgianStates.Commands
                 _logger.Error(e.ToString());
                 return await FailCommandAsync(message, "An unexpected error occured. Please contact the bot administrator.").ConfigureAwait(false);
             }
+        }
+
+        private async Task<CommandResponse> GetNationStatsResponseAsync(Message message, string nationName)
+        {
+            var request = new Request($"nation={nationName}&q=flag+wa+gavote+scvote+fullname+freedom+demonym2plural+category+population+region+founded+foundedtime+influence+lastactivity+census;mode=score;scale=0+1+2+65+66+80", ResponseFormat.Xml);
+            _dispatcher.Dispatch(request, 0);
+            await request.WaitForResponseAsync(token).ConfigureAwait(false);
+            await ProcessResultAsync(request, nationName).ConfigureAwait(false);
+            CommandResponse commandResponse = _responseBuilder.Build();
+            await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
+            return commandResponse;
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)

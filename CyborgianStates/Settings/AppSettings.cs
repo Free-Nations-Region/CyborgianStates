@@ -43,6 +43,7 @@ namespace CyborgianStates
         public string DbConnection { get; set; }
         public ulong ExternalAdminUserId { get; set; }
         public string DiscordBotLoginToken { get; set; }
+        public ulong PrimaryGuildId { get; set; }
         public InputChannel InputChannel { get; set; }
 
         public CultureInfo CultureInfo

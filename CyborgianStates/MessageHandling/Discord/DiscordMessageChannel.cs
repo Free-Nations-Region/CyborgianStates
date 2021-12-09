@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CyborgianStates.CommandHandling;
 using CyborgianStates.Interfaces;
 using Discord.Commands;
+using Discord.WebSocket;
 
 namespace CyborgianStates.MessageHandling
 {
@@ -40,10 +41,19 @@ namespace CyborgianStates.MessageHandling
         {
             if (message is null)
                 throw new ArgumentNullException(nameof(message));
-            currentChannel = !isPublic && !_isPrivateChannel
+
+            if (message.MessageObject is SocketSlashCommand command)
+            {
+                await command.ModifyOriginalResponseAsync(f => { f.Content = content; }).ConfigureAwait(false);
+                //await command.RespondAsync(text: content, ephemeral: isPublic).ConfigureAwait(false);
+            }
+            else
+            {
+                currentChannel = !isPublic && !_isPrivateChannel
                 ? message.MessageObject is SocketCommandContext Context ? await Context.User.CreateDMChannelAsync().ConfigureAwait(false) : _channel
                 : _channel;
-            await WriteToAsync(content).ConfigureAwait(false);
+                await WriteToAsync(content).ConfigureAwait(false);
+            }
         }
 
         public async Task ReplyToAsync(Message message, CommandResponse response, bool isPublic)
@@ -52,10 +62,18 @@ namespace CyborgianStates.MessageHandling
                 throw new ArgumentNullException(nameof(message));
             if (response is null)
                 throw new ArgumentNullException(nameof(response));
-            currentChannel = !isPublic && !_isPrivateChannel
+            if (message.MessageObject is SocketSlashCommand command)
+            {
+                await command.ModifyOriginalResponseAsync(f => { f.Content = response.Content; f.Embed = response.ResponseObject as Discord.Embed; }).ConfigureAwait(false);
+                //await command.RespondAsync(text: response.Content, embed: response.ResponseObject as Discord.Embed, ephemeral: isPublic).ConfigureAwait(false);
+            }
+            else
+            {
+                currentChannel = !isPublic && !_isPrivateChannel
                 ? message.MessageObject is SocketCommandContext Context ? await Context.User.CreateDMChannelAsync().ConfigureAwait(false) : _channel
                 : _channel;
-            await WriteToAsync(response).ConfigureAwait(false);
+                await WriteToAsync(response).ConfigureAwait(false);
+            }
         }
 
         public async Task WriteToAsync(CommandResponse response)
