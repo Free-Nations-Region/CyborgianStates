@@ -94,24 +94,24 @@ namespace CyborgianStates.MessageHandling
             _client.LoggedIn += Discord_LoggedIn;
             _client.LoggedOut += Discord_LoggedOut;
             _client.Ready += Discord_ReadyAsync;
-            _client.SlashCommandExecuted += Discord_SlashCommandExecutedAsync;
+            _client.SlashCommandExecuted += Discord_SlashCommandExecuted;
         }
 
-        private async Task Discord_SlashCommandExecutedAsync(SocketSlashCommand arg)
+        private Task Discord_SlashCommandExecuted(SocketSlashCommand arg)
         {
             if (_logger.IsEnabled(LogEventLevel.Verbose))
             {
                 _logger.Verbose("SlashCommand >> ChannelId: {channelId} {name} {author} {message}", arg.Channel?.Id, arg.User?.Username, arg.Channel?.Name, arg.CommandName);
             }
-            await arg.DeferAsync().ConfigureAwait(false);
             MessageReceived?.Invoke(this,
                 new MessageReceivedEventArgs(
                     new Message(
                         arg.User.Id,
-                        arg.CommandName,
+                        arg.Data.Name,
                         new DiscordMessageChannel(arg.Channel, false),
                         arg
             )));
+            return Task.CompletedTask;
         }
 
         private async Task Discord_ReadyAsync()

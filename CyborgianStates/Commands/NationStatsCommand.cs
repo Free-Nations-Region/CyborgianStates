@@ -48,24 +48,14 @@ namespace CyborgianStates.Commands
             }
             try
             {
-                _logger.Debug(message.Content);
-                var parameters = message.Content.Split(" ").Skip(1);
-                if (parameters.Any())
+                await message.DeferAsync().ConfigureAwait(false);
+                var nationName = GetNationName(message);
+                if (!string.IsNullOrWhiteSpace(nationName))
                 {
-                    string nationName = Helpers.ToID(string.Join(" ", parameters));
-                    return await GetNationStatsResponseAsync(message, nationName).ConfigureAwait(false);
+                    return await GetNationStatsResponseAsync(message, Helpers.ToID(nationName)).ConfigureAwait(false);
                 }
                 else
                 {
-                    if(message.MessageObject is SocketSlashCommand command)
-                    {
-                        var commandParams = command.Data.Options;
-                        var nationName = commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
-                        if (!string.IsNullOrWhiteSpace(nationName.ToString()))
-                        {
-                            return await GetNationStatsResponseAsync(message, nationName.ToString()).ConfigureAwait(false);
-                        }
-                    }
                     return await FailCommandAsync(message, "No parameter passed.").ConfigureAwait(false);
                 }
             }
@@ -86,6 +76,25 @@ namespace CyborgianStates.Commands
             }
         }
 
+        private string GetNationName(Message message)
+        {
+            if (message.IsSlashCommand)
+            {
+                var commandParams = message.SlashCommand.Data.Options;
+                return (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
+            }
+            else if (message.Content.Contains(" "))
+            {
+                var parameters = message.Content.Split(" ").Skip(1);
+                return string.Join(" ", parameters);
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+
         private async Task<CommandResponse> GetNationStatsResponseAsync(Message message, string nationName)
         {
             var request = new Request($"nation={nationName}&q=flag+wa+gavote+scvote+fullname+freedom+demonym2plural+category+population+region+founded+foundedtime+influence+lastactivity+census;mode=score;scale=0+1+2+65+66+80", ResponseFormat.Xml);
@@ -93,7 +102,7 @@ namespace CyborgianStates.Commands
             await request.WaitForResponseAsync(token).ConfigureAwait(false);
             await ProcessResultAsync(request, nationName).ConfigureAwait(false);
             CommandResponse commandResponse = _responseBuilder.Build();
-            await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
+            await message.ReplyAsync(commandResponse).ConfigureAwait(false);
             return commandResponse;
         }
 
@@ -108,7 +117,7 @@ namespace CyborgianStates.Commands
             _responseBuilder.FailWithDescription(reason)
                 .WithFooter(_config.Footer);
             var response = _responseBuilder.Build();
-            await message.Channel.ReplyToAsync(message, response).ConfigureAwait(false);
+            await message.ReplyAsync(response).ConfigureAwait(false);
             return response;
         }
 

@@ -9,7 +9,8 @@ namespace CyborgianStates
 {
     public class AppSettings
     {
-        public const string VERSION = "v4.0.0-preview-8";
+        public const string VERSION = "v4.0.0-beta";
+        public const ulong FNR_GUILD_ID = 241904885497462784;
 
         static internal bool IsTesting = false;
         private static string config = "development";
@@ -43,7 +44,7 @@ namespace CyborgianStates
         public string DbConnection { get; set; }
         public ulong ExternalAdminUserId { get; set; }
         public string DiscordBotLoginToken { get; set; }
-        public ulong PrimaryGuildId { get; set; }
+        public ulong PrimaryGuildId => FNR_GUILD_ID;
         public InputChannel InputChannel { get; set; }
 
         public CultureInfo CultureInfo

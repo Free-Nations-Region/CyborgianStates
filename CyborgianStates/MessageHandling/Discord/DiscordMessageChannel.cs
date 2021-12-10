@@ -44,8 +44,7 @@ namespace CyborgianStates.MessageHandling
 
             if (message.MessageObject is SocketSlashCommand command)
             {
-                await command.ModifyOriginalResponseAsync(f => { f.Content = content; }).ConfigureAwait(false);
-                //await command.RespondAsync(text: content, ephemeral: isPublic).ConfigureAwait(false);
+                await SendSlashCommandReplyAsync(command, content, isPublic).ConfigureAwait(false);
             }
             else
             {
@@ -64,8 +63,7 @@ namespace CyborgianStates.MessageHandling
                 throw new ArgumentNullException(nameof(response));
             if (message.MessageObject is SocketSlashCommand command)
             {
-                await command.ModifyOriginalResponseAsync(f => { f.Content = response.Content; f.Embed = response.ResponseObject as Discord.Embed; }).ConfigureAwait(false);
-                //await command.RespondAsync(text: response.Content, embed: response.ResponseObject as Discord.Embed, ephemeral: isPublic).ConfigureAwait(false);
+                await SendSlashCommandReplyAsync(command, content: response.Content, isPublic, responseObject: response.ResponseObject).ConfigureAwait(false);
             }
             else
             {
@@ -73,6 +71,18 @@ namespace CyborgianStates.MessageHandling
                 ? message.MessageObject is SocketCommandContext Context ? await Context.User.CreateDMChannelAsync().ConfigureAwait(false) : _channel
                 : _channel;
                 await WriteToAsync(response).ConfigureAwait(false);
+            }
+        }
+
+        private static async Task SendSlashCommandReplyAsync(SocketSlashCommand command, string content, bool isPublic, object responseObject = null)
+        {
+            if (command.HasResponded)
+            {
+                await command.ModifyOriginalResponseAsync(f => { f.Content = content; f.Embed = responseObject as Discord.Embed; }).ConfigureAwait(false);
+            }
+            else
+            {
+                await command.RespondAsync(text: content, embed: responseObject as Discord.Embed, ephemeral: isPublic).ConfigureAwait(false);
             }
         }
 

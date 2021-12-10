@@ -20,16 +20,13 @@ namespace CyborgianStates.Commands
             _logger = Log.ForContext<PingCommand>();
         }
 
-        public async Task<CommandResponse> Execute(Message message)
+        public Task<CommandResponse> Execute(Message message)
         {
             if (message is null)
             {
                 throw new ArgumentNullException(nameof(message));
             }
-            _logger.Debug("- Ping -");
-            var response = new CommandResponse(CommandStatus.Success, "Pong !");
-            await message.Channel.ReplyToAsync(message, response).ConfigureAwait(false);
-            return response;
+            return Task.FromResult(new CommandResponse(CommandStatus.Success, "Pong !"));
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)

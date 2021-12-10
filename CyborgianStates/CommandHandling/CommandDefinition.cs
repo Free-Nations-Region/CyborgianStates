@@ -19,7 +19,7 @@ namespace CyborgianStates.CommandHandling
         public bool IsSlashCommand { get; init; }
         public string Name { get; init; }
         public string Description { get; init; }
-        public IReadOnlyList<SlashCommandParameter> SlashCommandParameters { get; init; }
+        public IReadOnlyList<SlashCommandParameter> SlashCommandParameters { get; init; } = new List<SlashCommandParameter>();
     }
 
     public class SlashCommandParameter

@@ -36,22 +36,11 @@ namespace CyborgianStates.Commands
             }
             try
             {
+                await message.DeferAsync().ConfigureAwait(false);
                 if (_dumpDataService.Status == Enums.DumpDataStatus.Ready)
                 {
-                    _logger.Debug(message.Content);
-                    var parameters = message.Content.Split(" ").Skip(1).ToList();
-                    if (!parameters.Any())
-                    {
-                        parameters.Add("The Free Nations Region");
-                    }
-                    string regionName = Helpers.ToID(string.Join(" ", parameters));
-                    var request = new Request($"region={regionName}&q=name+numnations+founded+foundedtime+tags+delegate+census+power;mode=score;scale=65", ResponseFormat.Xml);
-                    _dispatcher.Dispatch(request, 0);
-                    await request.WaitForResponseAsync(_token).ConfigureAwait(false);
-                    await ProcessResultAsync(request, regionName).ConfigureAwait(false);
-                    CommandResponse commandResponse = _responseBuilder.Build();
-                    await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
-                    return commandResponse;
+                    string regionName = Helpers.ToID(GetRegionName(message));
+                    return await GetRegionStatsResponseAsync(message, regionName).ConfigureAwait(false);
                 }
                 else if (_dumpDataService.Status == Enums.DumpDataStatus.Updating)
                 {
@@ -79,6 +68,32 @@ namespace CyborgianStates.Commands
             }
         }
 
+        private async Task<CommandResponse> GetRegionStatsResponseAsync(Message message, string regionName)
+        {
+            var request = new Request($"region={regionName}&q=name+numnations+founded+foundedtime+tags+delegate+census+power;mode=score;scale=65", ResponseFormat.Xml);
+            _dispatcher.Dispatch(request, 0);
+            await request.WaitForResponseAsync(_token).ConfigureAwait(false);
+            await ProcessResultAsync(request, regionName).ConfigureAwait(false);
+            CommandResponse commandResponse = _responseBuilder.Build();
+            await message.ReplyAsync(commandResponse).ConfigureAwait(false);
+            return commandResponse;
+        }
+
+        private string GetRegionName(Message message)
+        {
+            string result = string.Empty;
+            if (message.IsSlashCommand)
+            {
+                var commandParams = message.SlashCommand.Data.Options;
+                result = (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
+            }
+            else if (message.Content.Contains(" "))
+            {
+                var parameters = message.Content.Split(" ").Skip(1);
+                result = string.Join(" ", parameters);
+            }
+            return string.IsNullOrWhiteSpace(result) ? "The Free Nations Region" : result;
+        }
         private async Task ProcessResultAsync(Request request, string regionName)
         {
             var dumpRegion = _dumpDataService.GetRegionByName(regionName);

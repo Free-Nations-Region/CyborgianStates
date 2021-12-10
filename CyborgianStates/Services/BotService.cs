@@ -88,8 +88,18 @@ namespace CyborgianStates.Services
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
                     }
                 });
-            CommandHandler.Register(new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" }));
-            CommandHandler.Register(new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" }));
+            CommandHandler.Register(new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" }) { IsSlashCommand = true, Name = "about", Description = "Let me tell you something about myself."});
+            CommandHandler.Register(
+                new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" }) 
+                { 
+                    Name = "region",
+                    Description="Get you some cool info about a NationStates Region.",
+                    IsSlashCommand= true,
+                    SlashCommandParameters= new List<SlashCommandParameter>
+                    {
+                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
+                    }
+                });
         }
 
         private async Task<bool> IsRelevantAsync(Message message)
@@ -120,17 +130,24 @@ namespace CyborgianStates.Services
                         if (result == null)
                         {
                             _logger.Error($"Unknown command trigger {e.Message.Content}");
-                            if (e.Message.MessageObject is SocketSlashCommand command)
+                            if (e.Message.IsSlashCommand)
                             {
-                                //await command.RespondAsync(text: "Hmm...That didn't work. I don't know what to do. This is not intended. Please contact BotAdmin to get this fixed.").ConfigureAwait(false);
+                                await e.Message.ReplyAsync("Hmm...That didn't work. I don't know what to do. This is not intended. Please contact BotAdmin to get this fixed.").ConfigureAwait(false);
+                            }
+                        }
+                        else
+                        {
+                            if (!e.Message.HasResponded)
+                            {
+                                await e.Message.ReplyAsync(result).ConfigureAwait(false);
                             }
                         }
                     }
                     else
                     {
-                        if (e.Message.MessageObject is SocketSlashCommand command)
+                        if (e.Message.IsSlashCommand)
                         {
-                            //await command.RespondAsync(text: "Hmm...You don't seem to have the permission to execute that command. Sorry. :(").ConfigureAwait(false);
+                            await e.Message.ReplyAsync("Hmm...You don't seem to have the permission to execute that command. Sorry. :(").ConfigureAwait(false);
                         }
                     }
                 }
