@@ -132,8 +132,8 @@ namespace CyborgianStates.Tests.Services
 
             CommandResponse commandResponse = new CommandResponse(CommandStatus.Error, "");
 
-            msgChannelMock.Setup(m => m.ReplyToAsync(It.IsAny<Message>(), It.IsAny<CommandResponse>()))
-                .Callback<Message, CommandResponse>((m, cr) =>
+            msgChannelMock.Setup(m => m.ReplyToAsync(It.IsAny<Message>(), It.IsAny<CommandResponse>(), It.IsAny<bool>()))
+                .Callback<Message, CommandResponse, bool>((m, cr, b) =>
                  {
                      commandResponse = cr;
                  })
