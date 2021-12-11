@@ -18,7 +18,7 @@ namespace CyborgianStates.Commands
         private readonly ILogger _logger;
         private readonly IDumpDataService _dumpDataService;
         private readonly CultureInfo _locale;
-        public RegionStatsCommand() : this(Program.ServiceProvider)
+        public RegionStatsCommand() : base()
         {
         }
 
@@ -42,13 +42,11 @@ namespace CyborgianStates.Commands
                     string regionName = Helpers.ToID(GetRegionName(message));
                     return await GetRegionStatsResponseAsync(message, regionName).ConfigureAwait(false);
                 }
-                else if (_dumpDataService.Status == Enums.DumpDataStatus.Updating)
-                {
-                    return await FailCommandAsync(message, "Dump Information is currently updating. Please try again later. Avg. ETA: ~15 s", Discord.Color.Gold, "Dump Data updating").ConfigureAwait(false);
-                }
                 else
                 {
-                    return await FailCommandAsync(message, $"Dump Data Service is in Status ({_dumpDataService.Status}) from which it can not recover on its own. Please contact the bot administrator.").ConfigureAwait(false);
+                    return _dumpDataService.Status == Enums.DumpDataStatus.Updating
+                        ? await FailCommandAsync(message, "Dump Information is currently updating. Please try again later. Avg. ETA: ~15 s", Discord.Color.Gold, "Dump Data updating").ConfigureAwait(false)
+                        : await FailCommandAsync(message, $"Dump Data Service is in Status ({_dumpDataService.Status}) from which it can not recover on its own. Please contact the bot administrator.").ConfigureAwait(false);
                 }
             }
             catch (TaskCanceledException e)
@@ -79,7 +77,7 @@ namespace CyborgianStates.Commands
             return commandResponse;
         }
 
-        private string GetRegionName(Message message)
+        private static string GetRegionName(Message message)
         {
             string result = string.Empty;
             if (message.IsSlashCommand)
@@ -87,7 +85,7 @@ namespace CyborgianStates.Commands
                 var commandParams = message.SlashCommand.Data.Options;
                 result = (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
             }
-            else if (message.Content.Contains(" "))
+            else if (message.Content.Contains(' '))
             {
                 var parameters = message.Content.Split(" ").Skip(1);
                 result = string.Join(" ", parameters);
@@ -110,7 +108,7 @@ namespace CyborgianStates.Commands
             var power = response.GetFirstValueByNodeName("POWER");
             var regionalAvgInfluence = response.Descendants("SCALE").Where(e => e.Attribute("id").Value == "65").FirstOrDefault()?.Value;
             var tags = response.Descendants().Where(e => e.Name == "TAG").Select(e => e.Value);
-            var waNationsCount = _dumpDataService.GetWANationsByRegionName(regionName).Count();
+            var waNationsCount = _dumpDataService.GetWANationsByRegionName(regionName).Count;
             var endoCount = _dumpDataService.GetEndoSumByRegionName(regionName);
 
             var firstOffice = await GetFirstOfficeAndOfficerAsync(regionName).ConfigureAwait(false);

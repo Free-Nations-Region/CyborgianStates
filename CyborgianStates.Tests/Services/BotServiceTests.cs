@@ -4,6 +4,7 @@ using CyborgianStates.Enums;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
 using CyborgianStates.Services;
+using CyborgianStates.Tests.CommandTests;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -77,6 +78,11 @@ namespace CyborgianStates.Tests.Services
             botService.IsRunning.Should().BeTrue();
             await botService.ShutdownAsync().ConfigureAwait(false);
             botService.IsRunning.Should().BeFalse();
+
+            var sp = Program.ServiceProvider;
+            Program.ServiceProvider = ConfigureServices();
+            _ = new BotService();
+            Program.ServiceProvider = sp;
         }
 
         [Fact]
@@ -84,10 +90,11 @@ namespace CyborgianStates.Tests.Services
         {
             userRepositoryMock.Setup(u => u.IsUserInDbAsync(It.IsAny<ulong>())).Returns(() => Task.FromResult(false));
             userRepositoryMock.Setup(u => u.AddUserToDbAsync(It.IsAny<ulong>())).Returns(() => Task.CompletedTask);
-            userRepositoryMock.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ulong>())).Returns(() => Task.FromResult(true));
+            userRepositoryMock.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ulong>())).Returns<string, ulong>((perm, id) => Task.FromResult(id == 0));
             msgChannelMock.Setup(m => m.WriteToAsync(It.IsAny<CommandResponse>())).Returns(Task.CompletedTask);
 
-            Message message = new Message(0, "test", msgChannelMock.Object);
+            var slashCommand = BaseCommandTests.GetSlashCommand(new());
+            Message message = new Message(0, "test", msgChannelMock.Object, slashCommand.Object);
             var botService = new BotService(ConfigureServices());
             await botService.InitAsync().ConfigureAwait(false);
             await botService.RunAsync().ConfigureAwait(false);
@@ -105,6 +112,10 @@ namespace CyborgianStates.Tests.Services
             AppSettings.IsTesting = false;
 
             message = new Message(1, "test", msgChannelMock.Object);
+            eventArgs = new MessageReceivedEventArgs(message);
+            msgHandlerMock.Raise(m => m.MessageReceived += null, this, eventArgs);
+
+            message = new Message(1, "test", msgChannelMock.Object, slashCommand.Object);
             eventArgs = new MessageReceivedEventArgs(message);
             msgHandlerMock.Raise(m => m.MessageReceived += null, this, eventArgs);
         }

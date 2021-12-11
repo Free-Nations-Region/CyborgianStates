@@ -34,26 +34,17 @@ namespace CyborgianStates
 #endif
                 }
             }
-            internal set
-            {
-                config = value;
-            }
+            internal set => config = value;
         }
 
         public string Contact { get; set; }
         public string DbConnection { get; set; }
         public ulong ExternalAdminUserId { get; set; }
         public string DiscordBotLoginToken { get; set; }
-        public ulong PrimaryGuildId => FNR_GUILD_ID;
+        public static ulong PrimaryGuildId => FNR_GUILD_ID;
         public InputChannel InputChannel { get; set; }
 
-        public CultureInfo CultureInfo
-        {
-            get
-            {
-                return !string.IsNullOrWhiteSpace(Locale) ? new CultureInfo(Locale) : CultureInfo.InvariantCulture;
-            }
-        }
+        public CultureInfo CultureInfo => !string.IsNullOrWhiteSpace(Locale) ? new CultureInfo(Locale) : CultureInfo.InvariantCulture;
 
         public string Locale { get; set; }
         public char SeperatorChar { get; set; }

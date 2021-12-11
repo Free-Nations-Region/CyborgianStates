@@ -27,7 +27,7 @@ jobs:
       working-directory: ./CyborgianStates.Tests
       run: |
         dotnet tool install --global coverlet.console
-        ~/.dotnet/tools/coverlet bin/Debug/net6.0/CyborgianStates.Tests.dll --target "dotnet" --targetargs "test --no-build --no-restore" --exclude "[*]CyborgianStates.MessageHandling.ConsoleInput" --exclude "[*]CyborgianStates.AppSettings" --exclude "[*]CyborgianStates.Data.Models.*" --exclude "[*]CyborgianStates.Data.SqliteSqlProvider" --exclude "[*]CyborgianStates.MessageHandling.DiscordClientWrapper" --exclude "[*]CyborgianStates.BotEnvironment" --exclude "[*]*.Exceptions.* --exclude "[NationStatesSharp]*"" --format opencover --output "./TestResults//"
+        ~/.dotnet/tools/coverlet bin/Debug/net6.0/CyborgianStates.Tests.dll --target "dotnet" --targetargs "test --no-build" --exclude "[*]CyborgianStates.Wrapper.*" --exclude "[*]CyborgianStates.Data.*" --exclude "[*]CyborgianStates.AppSettings" --exclude "[NationStatesSharp]*" --format opencover --output "./TestResults//"
     - name: Upload coverage to codecov.io
       uses: codecov/codecov-action@v1
       with:

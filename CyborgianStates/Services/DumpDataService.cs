@@ -18,8 +18,8 @@ namespace CyborgianStates.Services
 {
     public class DumpDataService : IDumpDataService
     {
-        private IDumpRetrievalService _dumpRetrievalService;
-        private ILogger _logger;
+        private readonly IDumpRetrievalService _dumpRetrievalService;
+        private readonly ILogger _logger;
         public DumpDataService(IDumpRetrievalService dumpRetrievalService)
         {
             _dumpRetrievalService = dumpRetrievalService;

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CyborgianStates.CommandHandling;
 using CyborgianStates.Enums;
 using CyborgianStates.Interfaces;
+using CyborgianStates.Wrapper;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -51,9 +52,9 @@ namespace CyborgianStates.MessageHandling
         {
             if (!_isRegistered)
             {
-                var localLogger = _logger.ForContext("guildId", _settings.PrimaryGuildId);
-                localLogger.Information("Retrieving guild by id.", _settings.PrimaryGuildId);
-                var guild = _client.GetGuild(_settings.PrimaryGuildId);
+                var localLogger = _logger.ForContext("guildId", AppSettings.PrimaryGuildId);
+                localLogger.Information("Retrieving guild by id.", AppSettings.PrimaryGuildId);
+                var guild = _client.GetGuild(AppSettings.PrimaryGuildId);
                 var commandsToBeRegistered = CommandHandler.Definitions.Where(d => d.IsSlashCommand);
                 if (guild is not null)
                 {
@@ -79,7 +80,7 @@ namespace CyborgianStates.MessageHandling
                 }
                 else
                 {
-                    localLogger.Error("Failed to retrieve guild by id. guild was null.", _settings.PrimaryGuildId);
+                    localLogger.Error("Failed to retrieve guild by id. guild was null.", AppSettings.PrimaryGuildId);
                 }
                 _isRegistered = true;
             }
@@ -97,20 +98,25 @@ namespace CyborgianStates.MessageHandling
             _client.SlashCommandExecuted += Discord_SlashCommandExecuted;
         }
 
-        private Task Discord_SlashCommandExecuted(SocketSlashCommand arg)
+        private Task Discord_SlashCommandExecuted(SocketSlashCommand arg) => HandleSlashCommand(new SlashCommand(arg));
+
+        internal Task HandleSlashCommand(ISlashCommand arg)
         {
-            if (_logger.IsEnabled(LogEventLevel.Verbose))
+            if (arg is not null)
             {
-                _logger.Verbose("SlashCommand >> ChannelId: {channelId} {name} {author} {message}", arg.Channel?.Id, arg.User?.Username, arg.Channel?.Name, arg.CommandName);
+                if (_logger.IsEnabled(LogEventLevel.Verbose))
+                {
+                    _logger.Verbose("SlashCommand >> ChannelId: {channelId} {name} {author} {message}", arg.Channel?.Id, arg.User?.Username, arg.Channel?.Name, arg.CommandName);
+                }
+                MessageReceived?.Invoke(this,
+                    new MessageReceivedEventArgs(
+                        new Message(
+                            arg.User.Id,
+                            arg.Data.Name,
+                            new DiscordMessageChannel(arg.Channel, false),
+                            arg
+                )));
             }
-            MessageReceived?.Invoke(this,
-                new MessageReceivedEventArgs(
-                    new Message(
-                        arg.User.Id,
-                        arg.Data.Name,
-                        new DiscordMessageChannel(arg.Channel, false),
-                        arg
-            )));
             return Task.CompletedTask;
         }
 

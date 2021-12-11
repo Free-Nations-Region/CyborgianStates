@@ -17,6 +17,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 using System;
 using System.Data.Common;
 using System.Threading.Tasks;
+using CyborgianStates.Wrapper;
 
 namespace CyborgianStates
 {
@@ -43,10 +44,7 @@ namespace CyborgianStates
             }
         }
 
-        public static void SetLauncher(ILauncher launcher)
-        {
-            Launcher = launcher;
-        }
+        public static void SetLauncher(ILauncher launcher) => Launcher = launcher;
 
         public static void SetUserInput(IUserInput input)
         {

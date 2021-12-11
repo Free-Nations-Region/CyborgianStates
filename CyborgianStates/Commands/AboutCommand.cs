@@ -9,24 +9,19 @@ using System.Threading.Tasks;
 
 namespace CyborgianStates.Commands
 {
-    public class AboutCommand : ICommand
+    public class AboutCommand : BaseCommand
     {
-        private readonly AppSettings _config;
-        private readonly IResponseBuilder _responseBuilder;
 
-        public AboutCommand() : this(Program.ServiceProvider)
+        public AboutCommand() : base()
         {
         }
 
-        public AboutCommand(IServiceProvider serviceProvider)
+        public AboutCommand(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _responseBuilder = serviceProvider.GetRequiredService<IResponseBuilder>();
-            _config = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
         }
 
-        public async Task<CommandResponse> Execute(Message message)
+        public override Task<CommandResponse> Execute(Message message)
         {
-            //await message.DeferAsync().ConfigureAwait(false);
             var response = _responseBuilder.Success()
                 .WithTitle("About CyborgianStates")
                 .WithField("Contact for this instance", _config.Contact)
@@ -34,8 +29,7 @@ namespace CyborgianStates.Commands
                 .WithField("Developed by Drehtisch", $"Discord: Drehtisch#5680{Environment.NewLine}NationStates: [Tigerania](https://www.nationstates.net/nation=tigerania)")
                 .WithField("Support", "via [OpenCollective](https://opencollective.com/fnr)")
                 .WithDefaults(_config.Footer).Build();
-            await message.ReplyAsync(response).ConfigureAwait(false);
-            return response;
+            return Task.FromResult(response);
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)

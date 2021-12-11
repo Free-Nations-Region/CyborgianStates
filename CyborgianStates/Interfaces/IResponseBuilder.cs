@@ -22,34 +22,16 @@ namespace CyborgianStates.Interfaces
 
     public static class ResponseBuilderExtensions
     {
-        public static IResponseBuilder WithTitle(this IResponseBuilder builder, string value)
-        {
-            return builder.WithCustomProperty(FieldKey.Title, value);
-        }
+        public static IResponseBuilder WithTitle(this IResponseBuilder builder, string value) => builder.WithCustomProperty(FieldKey.Title, value);
 
-        public static IResponseBuilder WithDescription(this IResponseBuilder builder, string value)
-        {
-            return builder.WithCustomProperty(FieldKey.Description, value);
-        }
+        public static IResponseBuilder WithDescription(this IResponseBuilder builder, string value) => builder.WithCustomProperty(FieldKey.Description, value);
 
-        public static IResponseBuilder WithFooter(this IResponseBuilder builder, string value)
-        {
-            return builder.WithCustomProperty(FieldKey.Footer, value);
-        }
+        public static IResponseBuilder WithFooter(this IResponseBuilder builder, string value) => builder.WithCustomProperty(FieldKey.Footer, value);
 
-        public static IResponseBuilder WithThumbnailUrl(this IResponseBuilder builder, string value)
-        {
-            return builder.WithCustomProperty(FieldKey.ThumbnailUrl, value);
-        }
+        public static IResponseBuilder WithThumbnailUrl(this IResponseBuilder builder, string value) => builder.WithCustomProperty(FieldKey.ThumbnailUrl, value);
 
-        public static IResponseBuilder WithUrl(this IResponseBuilder builder, string value)
-        {
-            return builder.WithCustomProperty(FieldKey.Url, value);
-        }
-        public static IResponseBuilder WithColor(this IResponseBuilder builder, Color color)
-        {
-            return builder.WithCustomProperty(FieldKey.Color, color.ToString());
-        }
+        public static IResponseBuilder WithUrl(this IResponseBuilder builder, string value) => builder.WithCustomProperty(FieldKey.Url, value);
+        public static IResponseBuilder WithColor(this IResponseBuilder builder, Color color) => builder.WithCustomProperty(FieldKey.Color, color.ToString());
 
         public static IResponseBuilder FailWithDescription(this IResponseBuilder builder, string reason)
         {

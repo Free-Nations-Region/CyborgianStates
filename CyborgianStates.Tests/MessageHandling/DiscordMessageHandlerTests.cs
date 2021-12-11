@@ -1,4 +1,6 @@
 ﻿using CyborgianStates.MessageHandling;
+using CyborgianStates.Tests.CommandTests;
+using CyborgianStates.Wrapper;
 using Discord;
 using Discord.WebSocket;
 using FluentAssertions;
@@ -81,6 +83,21 @@ namespace CyborgianStates.Tests.MessageHandling
             mockMessage.SetupGet<string>(m => m.Content).Returns("$test");
             handler.HandleMessage(mockMessage.Object);
 #pragma warning restore CS4014 // Da auf diesen Aufruf nicht gewartet wird, wird die Ausführung der aktuellen Methode vor Abschluss des Aufrufs fortgesetzt.
+        }
+
+        [Fact]
+        public async Task TestDiscordSlashCommandReceived()
+        {
+            var handler = new DiscordMessageHandler(appSettingsMock.Object, clientMock.Object);
+            await handler.InitAsync();
+            var mockUser = new Mock<IUser>();
+            mockUser.SetupGet<ulong>(m => m.Id).Returns(0);
+            mockUser.SetupGet<string>(m => m.Username).Returns("test");
+            
+            var command = BaseCommandTests.GetSlashCommand(new(), "test", mockUser.Object);
+#pragma warning disable CS4014 // da auf diesen aufruf nicht gewartet wird, wird die ausführung der aktuellen methode vor abschluss des aufrufs fortgesetzt.
+            handler.HandleSlashCommand(command.Object);
+#pragma warning restore CS4014 // da auf diesen aufruf nicht gewartet wird, wird die ausführung der aktuellen methode vor abschluss des aufrufs fortgesetzt.
         }
     }
 }

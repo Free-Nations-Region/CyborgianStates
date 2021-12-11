@@ -26,8 +26,8 @@ namespace CyborgianStates.MessageHandling
 
         public bool HasResponded { get; private set; }
 
-        public SocketSlashCommand SlashCommand => MessageObject as SocketSlashCommand;
-        public bool IsSlashCommand => MessageObject is SocketSlashCommand _socketSlashCommand;
+        public ISlashCommand SlashCommand => MessageObject as ISlashCommand;
+        public bool IsSlashCommand => MessageObject is ISlashCommand;
 
         public async Task DeferAsync()
         {

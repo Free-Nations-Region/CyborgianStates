@@ -20,27 +20,21 @@ using IRequestDispatcher = NationStatesSharp.Interfaces.IRequestDispatcher;
 
 namespace CyborgianStates.Commands
 {
-    public class NationStatsCommand : ICommand
+    public class NationStatsCommand : BaseCommand
     {
-        private readonly AppSettings _config;
-        private readonly IRequestDispatcher _dispatcher;
-        private readonly IResponseBuilder _responseBuilder;
         private readonly ILogger _logger;
         private CancellationToken token;
 
-        public NationStatsCommand() : this(Program.ServiceProvider)
+        public NationStatsCommand() : base()
         {
         }
 
-        public NationStatsCommand(IServiceProvider serviceProvider)
+        public NationStatsCommand(IServiceProvider serviceProvider) : base(serviceProvider)
         {
             _logger = Log.ForContext<NationStatsCommand>();
-            _dispatcher = serviceProvider.GetRequiredService<IRequestDispatcher>();
-            _config = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
-            _responseBuilder = serviceProvider.GetRequiredService<IResponseBuilder>();
         }
 
-        public async Task<CommandResponse> Execute(Message message)
+        public override async Task<CommandResponse> Execute(Message message)
         {
             if (message is null)
             {
@@ -50,14 +44,9 @@ namespace CyborgianStates.Commands
             {
                 await message.DeferAsync().ConfigureAwait(false);
                 var nationName = GetNationName(message);
-                if (!string.IsNullOrWhiteSpace(nationName))
-                {
-                    return await GetNationStatsResponseAsync(message, Helpers.ToID(nationName)).ConfigureAwait(false);
-                }
-                else
-                {
-                    return await FailCommandAsync(message, "No parameter passed.").ConfigureAwait(false);
-                }
+                return !string.IsNullOrWhiteSpace(nationName)
+                    ? await GetNationStatsResponseAsync(message, Helpers.ToID(nationName)).ConfigureAwait(false)
+                    : await FailCommandAsync(message, "No parameter passed.", Discord.Color.Red, "That didn't work.").ConfigureAwait(false);
             }
             catch (TaskCanceledException e)
             {
@@ -76,14 +65,14 @@ namespace CyborgianStates.Commands
             }
         }
 
-        private string GetNationName(Message message)
+        private static string GetNationName(Message message)
         {
             if (message.IsSlashCommand)
             {
                 var commandParams = message.SlashCommand.Data.Options;
                 return (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
             }
-            else if (message.Content.Contains(" "))
+            else if (message.Content.Contains(' '))
             {
                 var parameters = message.Content.Split(" ").Skip(1);
                 return string.Join(" ", parameters);
@@ -106,20 +95,17 @@ namespace CyborgianStates.Commands
             return commandResponse;
         }
 
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            token = cancellationToken;
-        }
+        public void SetCancellationToken(CancellationToken cancellationToken) => token = cancellationToken;
 
-        private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
-        {
-            _responseBuilder.Clear();
-            _responseBuilder.FailWithDescription(reason)
-                .WithFooter(_config.Footer);
-            var response = _responseBuilder.Build();
-            await message.ReplyAsync(response).ConfigureAwait(false);
-            return response;
-        }
+        //private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
+        //{
+        //    _responseBuilder.Clear();
+        //    _responseBuilder.FailWithDescription(reason)
+        //        .WithFooter(_config.Footer);
+        //    var response = _responseBuilder.Build();
+        //    await message.ReplyAsync(response).ConfigureAwait(false);
+        //    return response;
+        //}
 
         private async Task<string> GetOfficerPositionAsync(string nationName, string regionName)
         {
@@ -129,14 +115,7 @@ namespace CyborgianStates.Commands
             var doc = request.GetResponseAsXml();
 
             var list = doc.GetParentsOfFilteredDescendants("NATION", nationName);
-            if (list.Any())
-            {
-                return list.First().Element("OFFICE")?.Value;
-            }
-            else
-            {
-                return string.Empty;
-            }
+            return list.Any() ? (list.First().Element("OFFICE")?.Value) : string.Empty;
         }
 
         private async Task ProcessResultAsync(Request request, string nationName)

@@ -28,11 +28,20 @@ namespace CyborgianStates.Repositories
         public UserRepository(IDataAccessor dbConnection, ISqlProvider sql, IOptions<AppSettings> options)
         {
             if (dbConnection is null)
+            {
                 throw new ArgumentNullException(nameof(dbConnection));
+            }
+
             if (sql is null)
+            {
                 throw new ArgumentNullException(nameof(sql));
+            }
+
             if (options is null)
+            {
                 throw new ArgumentNullException(nameof(options));
+            }
+
             _dataAccessor = dbConnection;
             _sql = sql;
             _appSettings = options.Value;
@@ -43,20 +52,11 @@ namespace CyborgianStates.Repositories
             _userPermissionsSql = _sql.GetSql("User.Permissions");
         }
 
-        public async Task AddUserToDbAsync(ulong userId)
-        {
-            await _dataAccessor.InsertAsync(new User() { ExternalUserId = (long) userId }).ConfigureAwait(false);
-        }
+        public async Task AddUserToDbAsync(ulong userId) => await _dataAccessor.InsertAsync(new User() { ExternalUserId = (long) userId }).ConfigureAwait(false);
 
-        public async Task<User> GetUserByExternalUserIdAsync(ulong externalUserId)
-        {
-            return await _dataAccessor.QueryFirstOrDefaultAsync<User>(_getUserByExternalIdSql, new { ExternalUserId = externalUserId }).ConfigureAwait(false);
-        }
+        public async Task<User> GetUserByExternalUserIdAsync(ulong externalUserId) => await _dataAccessor.QueryFirstOrDefaultAsync<User>(_getUserByExternalIdSql, new { ExternalUserId = externalUserId }).ConfigureAwait(false);
 
-        public async Task<User> GetUserByIdAsync(ulong userId)
-        {
-            return await _dataAccessor.GetAsync<User>(userId).ConfigureAwait(false);
-        }
+        public async Task<User> GetUserByIdAsync(ulong userId) => await _dataAccessor.GetAsync<User>(userId).ConfigureAwait(false);
 
         public async Task<bool> IsAllowedAsync(string permissionType, ulong userId)
         {
@@ -66,7 +66,9 @@ namespace CyborgianStates.Repositories
             }
 
             if (_appSettings.ExternalAdminUserId == userId)
+            {
                 return true;
+            }
 
             IEnumerable<dynamic> res1 = await _dataAccessor.QueryAsync(_rolePermissionsSql, new { ExternalUserId = userId }, null, null, null).ConfigureAwait(false);
             IEnumerable<dynamic> res2 = await _dataAccessor.QueryAsync(_userPermissionsSql, new { ExternalUserId = userId }, null, null, null).ConfigureAwait(false);
@@ -77,18 +79,18 @@ namespace CyborgianStates.Repositories
             {
                 if (perms.Any(p => p.EndsWith("*", StringComparison.InvariantCulture)))
                 {
-                    string rootString = permissionType.Substring(0, permissionType.LastIndexOf(".", StringComparison.InvariantCulture));
+                    string rootString = permissionType[..permissionType.LastIndexOf(".", StringComparison.InvariantCulture)];
                     var listParts = new List<string>
                     {
                         "*",
-                        permissionType.Substring(0, permissionType.IndexOf(".", StringComparison.InvariantCulture))
+                        permissionType[..permissionType.IndexOf(".", StringComparison.InvariantCulture)]
                     };
                     while (rootString.Contains('.', StringComparison.InvariantCulture))
                     {
                         listParts.Add(rootString);
-                        rootString = rootString.Substring(0, rootString.LastIndexOf(".", StringComparison.InvariantCulture));
+                        rootString = rootString[..rootString.LastIndexOf(".", StringComparison.InvariantCulture)];
                     }
-                    HashSet<string> rootPerms = listParts.Select(p => $"{p}.*").ToHashSet();
+                    var rootPerms = listParts.Select(p => $"{p}.*").ToHashSet();
                     return perms.Overlaps(rootPerms);
                 }
                 else
@@ -102,14 +104,8 @@ namespace CyborgianStates.Repositories
             }
         }
 
-        public async Task<bool> IsUserInDbAsync(ulong userId)
-        {
-            return await _dataAccessor.QueryFirstOrDefaultAsync(_isUserInDbSql, new { ExternalUserId = userId }, null, null, null).ConfigureAwait(false) != null;
-        }
+        public async Task<bool> IsUserInDbAsync(ulong userId) => await _dataAccessor.QueryFirstOrDefaultAsync(_isUserInDbSql, new { ExternalUserId = userId }, null, null, null).ConfigureAwait(false) != null;
 
-        public async Task RemoveUserFromDbAsync(User user)
-        {
-            await _dataAccessor.DeleteAsync(user).ConfigureAwait(false);
-        }
+        public async Task RemoveUserFromDbAsync(User user) => await _dataAccessor.DeleteAsync(user).ConfigureAwait(false);
     }
 }

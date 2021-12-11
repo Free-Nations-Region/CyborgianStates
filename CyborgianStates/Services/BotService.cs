@@ -23,8 +23,6 @@ namespace CyborgianStates.Services
         private readonly IMessageHandler _messageHandler;
         private readonly IRequestDispatcher _requestDispatcher;
         private readonly IUserRepository _userRepo;
-        private readonly IResponseBuilder _responseBuilder;
-        private readonly AppSettings _appSettings;
         private readonly IBackgroundServiceRegistry _backgroundServiceRegistry;
         private readonly IServiceProvider _serviceProvider;
         public BotService() : this(Program.ServiceProvider)
@@ -38,8 +36,6 @@ namespace CyborgianStates.Services
             _requestDispatcher = _serviceProvider.GetRequiredService<IRequestDispatcher>();
             _userRepo = _serviceProvider.GetRequiredService<IUserRepository>();
             _logger = Log.Logger.ForContext<BotService>();
-            _responseBuilder = _serviceProvider.GetRequiredService<IResponseBuilder>();
-            _appSettings = _serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
             _backgroundServiceRegistry = _serviceProvider.GetRequiredService<IBackgroundServiceRegistry>();
         }
 
@@ -105,7 +101,10 @@ namespace CyborgianStates.Services
         private async Task<bool> IsRelevantAsync(Message message)
         {
             if (message is null)
+            {
                 throw new ArgumentNullException(nameof(message));
+            }
+
             if (message.AuthorId != 0 && !await _userRepo.IsUserInDbAsync(message.AuthorId).ConfigureAwait(false))
             {
                 await _userRepo.AddUserToDbAsync(message.AuthorId).ConfigureAwait(false);
