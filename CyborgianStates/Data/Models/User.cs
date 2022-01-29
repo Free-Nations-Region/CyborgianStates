@@ -5,7 +5,7 @@ namespace CyborgianStates.Data.Models
     [Table("User")]
     public class User
     {
-        public long ExternalUserId { get; set; }
+        public ulong ExternalUserId { get; set; }
 
         [Key]
         public long Id { get; set; }

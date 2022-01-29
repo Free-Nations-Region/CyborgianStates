@@ -23,16 +23,12 @@ namespace CyborgianStates.Commands
     public class NationStatsCommand : BaseCommand
     {
         private readonly ILogger _logger;
-        private CancellationToken token;
 
         public NationStatsCommand() : base()
         {
         }
 
-        public NationStatsCommand(IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-            _logger = Log.ForContext<NationStatsCommand>();
-        }
+        public NationStatsCommand(IServiceProvider serviceProvider) : base(serviceProvider) => _logger = Log.ForContext<NationStatsCommand>();
 
         public override async Task<CommandResponse> Execute(Message message)
         {
@@ -88,14 +84,12 @@ namespace CyborgianStates.Commands
         {
             var request = new Request($"nation={nationName}&q=flag+wa+gavote+scvote+fullname+freedom+demonym2plural+category+population+region+founded+foundedtime+influence+lastactivity+census;mode=score;scale=0+1+2+65+66+80", ResponseFormat.Xml);
             _dispatcher.Dispatch(request, 0);
-            await request.WaitForResponseAsync(token).ConfigureAwait(false);
+            await request.WaitForResponseAsync(_token).ConfigureAwait(false);
             await ProcessResultAsync(request, nationName).ConfigureAwait(false);
             CommandResponse commandResponse = _responseBuilder.Build();
             await message.ReplyAsync(commandResponse).ConfigureAwait(false);
             return commandResponse;
         }
-
-        public void SetCancellationToken(CancellationToken cancellationToken) => token = cancellationToken;
 
         //private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
         //{
@@ -111,7 +105,7 @@ namespace CyborgianStates.Commands
         {
             var request = new Request($"region={Helpers.ToID(regionName)}&q=officers", ResponseFormat.Xml);
             _dispatcher.Dispatch(request, 0);
-            await request.WaitForResponseAsync(token).ConfigureAwait(false);
+            await request.WaitForResponseAsync(_token).ConfigureAwait(false);
             var doc = request.GetResponseAsXml();
 
             var list = doc.GetParentsOfFilteredDescendants("NATION", nationName);

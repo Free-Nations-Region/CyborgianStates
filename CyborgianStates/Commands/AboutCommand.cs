@@ -31,9 +31,5 @@ namespace CyborgianStates.Commands
                 .WithDefaults(_config.Footer).Build();
             return Task.FromResult(response);
         }
-
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-        }
     }
 }

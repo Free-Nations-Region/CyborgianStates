@@ -96,7 +96,7 @@ namespace CyborgianStates.Tests.MessageHandling
             
             var command = BaseCommandTests.GetSlashCommand(new(), "test", mockUser.Object);
 #pragma warning disable CS4014 // da auf diesen aufruf nicht gewartet wird, wird die ausführung der aktuellen methode vor abschluss des aufrufs fortgesetzt.
-            handler.HandleSlashCommand(command.Object);
+            handler.HandleSlashCommandAsync(command.Object);
 #pragma warning restore CS4014 // da auf diesen aufruf nicht gewartet wird, wird die ausführung der aktuellen methode vor abschluss des aufrufs fortgesetzt.
         }
     }

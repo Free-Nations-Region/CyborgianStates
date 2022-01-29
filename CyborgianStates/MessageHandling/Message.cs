@@ -1,6 +1,7 @@
 ﻿using CyborgianStates.CommandHandling;
 using CyborgianStates.Interfaces;
 using Discord.WebSocket;
+using System;
 using System.Threading.Tasks;
 
 namespace CyborgianStates.MessageHandling
@@ -43,11 +44,11 @@ namespace CyborgianStates.MessageHandling
             {
                 if (SlashCommand.HasResponded)
                 {
-                    await SlashCommand.ModifyOriginalResponseAsync(f => { f.Content = response.Content; f.Embed = response.ResponseObject as Discord.Embed; }).ConfigureAwait(false);
+                    await SlashCommand.ModifyOriginalResponseAsync(f => { f.Content = response.Content; f.Embed = response.ResponseObject; f.Components = response.Components; }).ConfigureAwait(false);
                 }
                 else
                 {
-                    await SlashCommand.RespondAsync(text: response.Content, embed: response.ResponseObject as Discord.Embed, ephemeral: !isPublic).ConfigureAwait(false);
+                    await SlashCommand.RespondAsync(text: response.Content, embed: response.ResponseObject, ephemeral: !isPublic, components: response.Components).ConfigureAwait(false);
                 }
             }
             else

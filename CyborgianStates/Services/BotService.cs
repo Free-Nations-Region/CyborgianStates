@@ -72,31 +72,52 @@ namespace CyborgianStates.Services
 
         private static void RegisterCommands()
         {
-            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { Name = "ping", Description = "Pong's you, lol.", IsSlashCommand = true });
             CommandHandler.Register(
-                new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" }) 
+                new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { Name = "ping", Description = "Pong's you, lol.", IsSlashCommand = true, /*IsGlobalSlashCommand = true*/ });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" })
                 {
-                    Name = "nation", 
-                    Description = "Gets you some cool info about a NationStates Nation.", 
-                    IsSlashCommand = true, 
-                    SlashCommandParameters = new List<SlashCommandParameter> 
+                    Name = "nation",
+                    Description = "Gets you some cool info about a NationStates Nation.",
+                    IsSlashCommand = true,
+                    SlashCommandParameters = new List<SlashCommandParameter>
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
-                    }
+                    },
+                    SlashCommandPermissions = DefaultSlashCommandPermissions()
+                    //IsGlobalSlashCommand = true,
                 });
-            CommandHandler.Register(new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" }) { IsSlashCommand = true, Name = "about", Description = "Let me tell you something about myself."});
             CommandHandler.Register(
-                new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" }) 
-                { 
+                new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" })
+                {
+                    Name = "about",
+                    Description = "Let me tell you something about myself.",
+                    IsSlashCommand = true,
+                    SlashCommandPermissions = DefaultSlashCommandPermissions()
+                    /*IsGlobalSlashCommand = true*/
+                });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" })
+                {
                     Name = "region",
-                    Description="Get you some cool info about a NationStates Region.",
-                    IsSlashCommand= true,
-                    SlashCommandParameters= new List<SlashCommandParameter>
+                    Description = "Get you some cool info about a NationStates Region.",
+                    IsSlashCommand = true,
+                    SlashCommandParameters = new List<SlashCommandParameter>
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
-                    }
+                    },
+                    SlashCommandPermissions = DefaultSlashCommandPermissions()
+                    //IsGlobalSlashCommand = true
                 });
+            ;
+            // Determine Permissions from DB
         }
+
+        private static List<SlashCommandPermission> DefaultSlashCommandPermissions() => new()
+        {
+            new SlashCommandPermission() { Id = 730872813010813080, IsUser = false },
+            new SlashCommandPermission() { Id = 264147949167050752, IsUser = false },
+        };
 
         private async Task<bool> IsRelevantAsync(Message message)
         {

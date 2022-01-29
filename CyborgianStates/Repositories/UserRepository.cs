@@ -52,7 +52,7 @@ namespace CyborgianStates.Repositories
             _userPermissionsSql = _sql.GetSql("User.Permissions");
         }
 
-        public async Task AddUserToDbAsync(ulong userId) => await _dataAccessor.InsertAsync(new User() { ExternalUserId = (long) userId }).ConfigureAwait(false);
+        public async Task AddUserToDbAsync(ulong userId) => await _dataAccessor.InsertAsync(new User() { ExternalUserId = userId }).ConfigureAwait(false);
 
         public async Task<User> GetUserByExternalUserIdAsync(ulong externalUserId) => await _dataAccessor.QueryFirstOrDefaultAsync<User>(_getUserByExternalIdSql, new { ExternalUserId = externalUserId }).ConfigureAwait(false);
 
