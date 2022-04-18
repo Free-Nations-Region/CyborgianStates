@@ -78,6 +78,7 @@ namespace CyborgianStates.Services
             CommandHandler.Register(new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" }));
             CommandHandler.Register(new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" }));
             CommandHandler.Register(new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" }));
+            CommandHandler.Register(new CommandDefinition(typeof(CouldEndorseCommand), new List<string>() { "couldendorse", "ce" }));
         }
 
         private async Task<bool> IsRelevantAsync(Message message)
