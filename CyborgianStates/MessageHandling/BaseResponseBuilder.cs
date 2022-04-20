@@ -62,7 +62,7 @@ namespace CyborgianStates.MessageHandling
         {
             _properties.Clear();
             _fields.Clear();
-            _response = null;
+            _response = new CommandResponse();
         }
     }
 }
