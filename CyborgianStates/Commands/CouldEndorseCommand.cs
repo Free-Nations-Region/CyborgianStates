@@ -72,16 +72,8 @@ namespace CyborgianStates.Commands
             }
         }
         
-        public void SetCancellationToken(CancellationToken cancellationToken)
-        {
-            token = cancellationToken;
-        }
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="nation"></param>
-        /// <exception cref="InvalidOperationException"></exception>
+        public void SetCancellationToken(CancellationToken cancellationToken) => token = cancellationToken;
+
         private async Task ProcessResultAsync(Message message, string nation)
         {
             DumpNation dumpNation = _dumpDataService.GetNationByName(nation);
@@ -98,14 +90,20 @@ namespace CyborgianStates.Commands
             await SplitResponseAsync(message, dumpNation, couldEndorseNames).ConfigureAwait(true);
 
             DumpRetrievalBackgroundService dumpService = new DumpRetrievalBackgroundService();
-            int? hoursSinceUpdate = GetUpdateTime(dumpService, UpdateTime.Last)?.Hours;
-            int? hoursUntilUpdate = GetUpdateTime(dumpService, UpdateTime.Next)?.Hours;
+            TimeSpan? hoursSinceUpdate = GetUpdateTime(dumpService, UpdateTime.Last);
+            TimeSpan? hoursUntilUpdate = GetUpdateTime(dumpService, UpdateTime.Next);
 
             _responseBuilder.Clear();
             _responseBuilder.Success()
+                .WithTitle("Finished") // TODO: Bug likely in BaseResponseBuilder.Clear(). Title and Description are not cleared.
+                .WithDescription("") // TODO: Bug likely in BaseResponseBuilder.Clear(). Title and Description are not cleared.
                 .WithField("Datascource", "Dump", true)
-                .WithField("As of", $"{hoursSinceUpdate}h ago", true)
-                .WithField("Next update in", $"{hoursUntilUpdate}h", true)
+                .WithField("As of", 
+                    $"{(hoursSinceUpdate.HasValue ? $"{Math.Abs(hoursSinceUpdate.Value.Hours)}h and {Math.Abs(hoursSinceUpdate.Value.Minutes)}m" : "Unknown")} ago", 
+                    true)
+                .WithField("Next update in", 
+                    $"{(hoursUntilUpdate.HasValue ? $"{Math.Abs(hoursUntilUpdate.Value.Hours)}h and {Math.Abs(hoursUntilUpdate.Value.Minutes)}m" : "Unknown")}",
+                    true)
                 .WithFooter(_config.Footer);
         }
         
@@ -141,7 +139,7 @@ namespace CyborgianStates.Commands
                 _responseBuilder.Success()
                     .WithTitle($"{nation.Name} could endorse {endorsable.Count} more nations.")
                     .WithDescription(string.Join(", ", chunk));
-                await message.Channel.ReplyToAsync(message, _responseBuilder.Build()).ConfigureAwait(false);
+                await message.Channel.ReplyToAsync(message, _responseBuilder.Build()).ConfigureAwait(true);
                 _responseBuilder.Clear();
             }
         }
@@ -152,6 +150,7 @@ namespace CyborgianStates.Commands
             Next
         }
         
+        // TODO: This method should be moved elsewhere so that it can be used by other commands.
         private TimeSpan? GetUpdateTime(DumpRetrievalBackgroundService cronSchedule, UpdateTime nextOrLast)
         {
             var exp = new CronExpression(cronSchedule.CronSchedule) { TimeZone = cronSchedule.TimeZone };
