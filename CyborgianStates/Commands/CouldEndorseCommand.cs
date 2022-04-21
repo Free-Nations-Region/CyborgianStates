@@ -64,7 +64,7 @@ namespace CyborgianStates.Commands
                 _logger.Error(e.ToString());
                 return await FailCommandAsync(message, "Specified nation is not a WA member.").ConfigureAwait(false);
             }
-                catch (Exception e)
+            catch (Exception e)
             {
                 _logger.Error(e.ToString());
                 return await FailCommandAsync(message,
@@ -93,17 +93,14 @@ namespace CyborgianStates.Commands
             TimeSpan? hoursSinceUpdate = GetUpdateTime(dumpService, UpdateTime.Last);
             TimeSpan? hoursUntilUpdate = GetUpdateTime(dumpService, UpdateTime.Next);
 
+            
             _responseBuilder.Clear();
             _responseBuilder.Success()
                 .WithTitle("Finished") // TODO: Bug likely in BaseResponseBuilder.Clear(). Title and Description are not cleared.
                 .WithDescription("") // TODO: Bug likely in BaseResponseBuilder.Clear(). Title and Description are not cleared.
                 .WithField("Datascource", "Dump", true)
-                .WithField("As of", 
-                    $"{(hoursSinceUpdate.HasValue ? $"{Math.Abs(hoursSinceUpdate.Value.Hours)}h and {Math.Abs(hoursSinceUpdate.Value.Minutes)}m" : "Unknown")} ago", 
-                    true)
-                .WithField("Next update in", 
-                    $"{(hoursUntilUpdate.HasValue ? $"{Math.Abs(hoursUntilUpdate.Value.Hours)}h and {Math.Abs(hoursUntilUpdate.Value.Minutes)}m" : "Unknown")}",
-                    true)
+                .WithField("As of", $"{(hoursSinceUpdate.HasValue ? hoursSinceUpdate.Value.ToString("g") : "Unknown")} ago", true)
+                .WithField("Next update in", $"{(hoursUntilUpdate.HasValue ? hoursUntilUpdate.Value.ToString("g") : "Unknown")}", true)
                 .WithFooter(_config.Footer);
         }
         
@@ -113,6 +110,7 @@ namespace CyborgianStates.Commands
             const int limit = 3800; // Less than 4096 description limit to accommodate for ", " in string.Join.
             
             Stack<string> endorse = new Stack<string>(endorsable.Select(n => $"[{n}](https://www.nationstates.net/nation={n})"));
+            
             int totalChars = endorse.Sum(n => n.Length);
             if (totalChars < limit) // Determine if we need to split the response at all.
             {
