@@ -2,9 +2,9 @@ name: build and test
 
 on:
   push:
-    branches: [ master, Rel* ]
+    branches: [ main, Rel* ]
   pull_request:
-    branches: [ master, Rel* ]
+    branches: [ main, Rel* ]
 
 jobs:
   build:
