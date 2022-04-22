@@ -11,7 +11,7 @@ namespace CyborgianStates.MessageHandling
 {
     public abstract class BaseResponseBuilder : IResponseBuilder
     {
-        protected readonly CommandResponse _response;
+        protected CommandResponse _response;
         protected readonly Dictionary<FieldKey, string> _properties = new();
         protected readonly Dictionary<string, (string, bool)> _fields = new();
 
@@ -62,6 +62,7 @@ namespace CyborgianStates.MessageHandling
         {
             _properties.Clear();
             _fields.Clear();
+            _response = new();
         }
     }
 }
