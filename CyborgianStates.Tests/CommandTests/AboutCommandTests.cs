@@ -2,6 +2,7 @@
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using CyborgianStates.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -21,7 +22,7 @@ namespace CyborgianStates.Tests.CommandTests
         private IServiceProvider _serviceProvider;
         public AboutCommandTests()
         {
-            _serviceProvider = ConfigureServices().BuildServiceProvider();
+            _serviceProvider = ConfigureServices(new TestRequestDispatcher()).BuildServiceProvider();
         }
 
         [Fact]
@@ -46,12 +47,12 @@ namespace CyborgianStates.Tests.CommandTests
         }
         public override Task TestCancel()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         public override Task TestExecuteWithErrors()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

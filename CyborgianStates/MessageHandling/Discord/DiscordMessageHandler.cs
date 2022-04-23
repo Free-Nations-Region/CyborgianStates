@@ -68,56 +68,54 @@ namespace CyborgianStates.MessageHandling
                     var guild = _client.GetGuild(AppSettings.PrimaryGuildId);
                     foreach (var command in commandsToBeRegistered)
                     {
-                        _logger.Information("Registering command '{commandName}'", command.Name);
+                        _logger.Information("Registering command '{commandName}' IsGlobal: {isGlobal}", command.Name, command.IsGlobalSlashCommand);
                         var slashCommand = GetSlashCommandFromCommandDefinition(command);
                         if (command.IsGlobalSlashCommand)
                         {
                             if (globalCommands.Any(a => a.Name == command.Name))
                             {
-                                _logger.Information("Command '{commandName}' is already registered as global command. Updating.", command.Name);
                                 var gCommand = globalCommands.First(a => a.Name == command.Name);
-                                await gCommand.ModifyAsync<SlashCommandProperties>(f =>
+                                if (ShouldUpdateCommand(command, gCommand))
                                 {
-                                    f.Name = slashCommand.Name;
-                                    f.Description = slashCommand.Description;
-                                    f.Options = slashCommand.Options;
-                                    f.IsDefaultPermission = slashCommand.IsDefaultPermission;
-                                }).ConfigureAwait(false);
-                                _logger.Information("Command '{commandName}' updated sucessfully.", command.Name);
+                                    _logger.Information("Command '{commandName}' is already registered as global command. Updating.", command.Name);
+                                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
+                                }
                             }
                             else
                             {
+                                if (guildCommands.Any(a => a.Name == command.Name))
+                                {
+                                    var gCommand = guildCommands.First(a => a.Name == command.Name);
+                                    _logger.Information("Command '{commandName}' is already registered as guild command. Deleting. Before recreating it as global command.", command.Name);
+                                    await gCommand.DeleteAsync().ConfigureAwait(false);
+                                }
                                 await restClient.CreateGlobalCommand(slashCommand).ConfigureAwait(false);
                                 _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
                             }
                         }
                         else
                         {
-                            RestGuildCommand resultCommand;
                             if (guildCommands.Any(a => a.Name == command.Name))
                             {
                                 var gCommand = guildCommands.First(a => a.Name == command.Name);
-                                resultCommand = gCommand;
-                                _logger.Information("Command '{commandName}' is already registered as guild command for the primary guild. Updating.", command.Name);
-                                await gCommand.ModifyAsync<SlashCommandProperties>(f =>
+                                if (ShouldUpdateCommand(command, gCommand))
                                 {
-                                    f.Name = slashCommand.Name;
-                                    f.Description = slashCommand.Description;
-                                    f.Options = slashCommand.Options;
-                                    f.IsDefaultPermission = slashCommand.IsDefaultPermission;
-                                }).ConfigureAwait(false);
-                                _logger.Information("Command '{commandName}' updated sucessfully.", command.Name);
+                                    _logger.Information("Command '{commandName}' is already registered as guild command for the primary guild. Updating.", command.Name);
+                                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
+                                }
                             }
                             else
                             {
-                                resultCommand = await restClient.CreateGuildCommand(slashCommand, AppSettings.PrimaryGuildId).ConfigureAwait(false);
+                                if (globalCommands.Any(a => a.Name == command.Name))
+                                {
+                                    var gCommand = globalCommands.First(a => a.Name == command.Name);
+                                    _logger.Information("Command '{commandName}' is already registered as global command. Deleting. Before recreating it as guild command.", command.Name);
+                                    await gCommand.DeleteAsync().ConfigureAwait(false);
+                                }
+                                    await restClient.CreateGuildCommand(slashCommand, AppSettings.PrimaryGuildId).ConfigureAwait(false);
                                 _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
                             }
-                            if (!resultCommand.IsDefaultPermission)
-                            {
-                                _logger.Information("Updating permissions for command '{commandName}'.", command.Name);
-                                await resultCommand.ModifyCommandPermissions(GetApplicationCommandPermissions(command, _logger.ForContext("command", command.Name)).ToArray()).ConfigureAwait(false);
-                            }
+
                         }
                     }
                 }
@@ -128,28 +126,45 @@ namespace CyborgianStates.MessageHandling
             }
         }
 
-        private static IEnumerable<ApplicationCommandPermission> GetApplicationCommandPermissions(CommandDefinition definition, ILogger logger)
+        private async Task UpdateCommandAsync(SlashCommandProperties slashCommand, RestApplicationCommand gCommand)
         {
-            if (definition.IsSlashCommand)
+            await gCommand.ModifyAsync<SlashCommandProperties>(f =>
             {
-                foreach (var perm in definition.SlashCommandPermissions)
+                f.Name = slashCommand.Name;
+                f.Description = slashCommand.Description;
+                f.Options = slashCommand.Options;
+                f.IsDefaultPermission = slashCommand.IsDefaultPermission;
+            }).ConfigureAwait(false);
+            _logger.Information("Command '{commandName}' updated sucessfully.", slashCommand.Name);
+        }
+
+        private static bool ShouldUpdateCommand(CommandDefinition definition, RestApplicationCommand command)
+        {
+            var val = !(definition.Name.Equals(command.Name, StringComparison.OrdinalIgnoreCase) && definition.Description.Equals(command.Description, StringComparison.OrdinalIgnoreCase));
+            var paramUpdate = definition.SlashCommandParameters.Count != command.Options.Count;
+
+            foreach (var param in definition.SlashCommandParameters)
+            {
+                if (paramUpdate)
                 {
-                    logger.Information("Permission Type {type} Id {id}.", perm.IsUser ? ApplicationCommandPermissionTarget.User : ApplicationCommandPermissionTarget.Role, perm.Id);
-                    yield return new ApplicationCommandPermission(perm.Id, perm.IsUser ? ApplicationCommandPermissionTarget.User : ApplicationCommandPermissionTarget.Role, true);
+                    break;
+                }
+
+                var opt = command.Options.FirstOrDefault(opt => opt.Name == param.Name);
+                if (opt != null)
+                {
+                    paramUpdate = param.Type != opt.Type || param.Description != opt.Description || param.IsRequired != opt.IsRequired;
                 }
             }
-            else
-            {
-                yield break;
-            }
+
+            return val || paramUpdate;
         }
 
         private static SlashCommandProperties GetSlashCommandFromCommandDefinition(CommandDefinition definition)
         {
-            var commandBuilder = new Discord.SlashCommandBuilder();
+            var commandBuilder = new SlashCommandBuilder();
             commandBuilder.WithName(definition.Name);
             commandBuilder.WithDescription(definition.Description);
-            commandBuilder.IsDefaultPermission = !definition.SlashCommandPermissions.Any();
             foreach (var param in definition.SlashCommandParameters)
             {
                 commandBuilder.AddOption(param.Name, param.Type, param.Description, isRequired: param.IsRequired);
@@ -168,26 +183,6 @@ namespace CyborgianStates.MessageHandling
             _client.LoggedOut += Discord_LoggedOut;
             _client.Ready += Discord_ReadyAsync;
             _client.SlashCommandExecuted += Discord_SlashCommandExecuted;
-            _client.ButtonExecuted += Client_ButtonExecutedAsync;
-        }
-
-        private async Task Client_ButtonExecutedAsync(SocketMessageComponent arg)
-        {
-            if (arg is not null)
-            {
-                //if (_logger.IsEnabled(LogEventLevel.Verbose))
-                //{
-                //    _logger.Verbose("Message Component >> ChannelId: {channelId} {name} {author} {message}", arg.Channel?.Id, arg.User?.Username, arg.Channel?.Name, arg.Data.CustomId);
-                //}
-                //MessageReceived?.Invoke(this,
-                //    new MessageReceivedEventArgs(
-                //        new Message(
-                //            arg.User.Id,
-                //            arg.Data.CustomId,
-                //            new DiscordMessageChannel(arg.Channel, false),
-                //            arg
-                //)));
-            }
         }
 
         private Task Discord_SlashCommandExecuted(SocketSlashCommand arg) => HandleSlashCommandAsync(new SlashCommand(arg));
@@ -219,7 +214,6 @@ namespace CyborgianStates.MessageHandling
                     IsPrimaryGuild = true,
                     IsDM = false,
                     Timestamp = arg.CreatedAt.ToUnixTimeSeconds(),
-
                 };
                 await _dataAccessor.InsertAsync(usage).ConfigureAwait(false);
                 MessageReceived?.Invoke(this,
@@ -231,11 +225,6 @@ namespace CyborgianStates.MessageHandling
                             arg
                 )));
             }
-
-            //var builder = new ComponentBuilder().WithButton("Test Button", "custom-id");
-            //await arg.DeferAsync().ConfigureAwait(false);
-            //await arg.ModifyOriginalResponseAsync(f => { f.Components = builder.Build(); f.Content = "Test Reply"; }).ConfigureAwait(false);
-
         }
 
         private async Task Discord_ReadyAsync()
@@ -256,9 +245,9 @@ namespace CyborgianStates.MessageHandling
             return Task.CompletedTask;
         }
 
-        private Task Discord_MessageReceived(SocketMessage arg) => HandleMessage(arg);
+        private Task Discord_MessageReceived(SocketMessage arg) => HandleMessageAsync(arg);
 
-        internal async Task HandleMessage(IMessage message)
+        internal async Task HandleMessageAsync(IMessage message)
         {
             if (message.Content.StartsWith(_settings.SeperatorChar))
             {

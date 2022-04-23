@@ -20,6 +20,5 @@ namespace CyborgianStates.CommandHandling
         public string Content { get; internal set; }
         public CommandStatus Status { get; internal set; }
         public Embed ResponseObject { get; internal set; }
-        public MessageComponent Components { get; internal set; }
     }
 }

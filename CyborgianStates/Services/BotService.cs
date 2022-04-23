@@ -84,7 +84,6 @@ namespace CyborgianStates.Services
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
                     },
-                    SlashCommandPermissions = DefaultSlashCommandPermissions()
                     //IsGlobalSlashCommand = true,
                 });
             CommandHandler.Register(
@@ -93,7 +92,6 @@ namespace CyborgianStates.Services
                     Name = "about",
                     Description = "Let me tell you something about myself.",
                     IsSlashCommand = true,
-                    SlashCommandPermissions = DefaultSlashCommandPermissions()
                     /*IsGlobalSlashCommand = true*/
                 });
             CommandHandler.Register(
@@ -106,18 +104,9 @@ namespace CyborgianStates.Services
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
                     },
-                    SlashCommandPermissions = DefaultSlashCommandPermissions()
                     //IsGlobalSlashCommand = true
                 });
-            ;
-            // Determine Permissions from DB
         }
-
-        private static List<SlashCommandPermission> DefaultSlashCommandPermissions() => new()
-        {
-            new SlashCommandPermission() { Id = 730872813010813080, IsUser = false },
-            new SlashCommandPermission() { Id = 264147949167050752, IsUser = false },
-        };
 
         private async Task<bool> IsRelevantAsync(Message message)
         {

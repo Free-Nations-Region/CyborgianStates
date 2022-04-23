@@ -20,6 +20,7 @@ namespace CyborgianStates.Tests.CommandHandling
             CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" })
             {
                 IsSlashCommand = true,
+                IsGlobalSlashCommand = true,
                 Name = "ping",
                 Description = "Pings",
                 SlashCommandParameters = new List<SlashCommandParameter>
@@ -60,7 +61,7 @@ namespace CyborgianStates.Tests.CommandHandling
         public void TestRegisterCommand()
         {
             CommandHandler.Clear();
-            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
+            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { IsGlobalSlashCommand = false });
             CommandHandler.Count.Should().Be(1);
             CommandHandler.Definitions.Count.Should().Be(1);
         }

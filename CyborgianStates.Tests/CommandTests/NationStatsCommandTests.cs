@@ -26,9 +26,11 @@ namespace CyborgianStates.Tests.CommandTests
     public class NationStatsCommandTests : BaseCommandTests
     {
         private IServiceProvider _serviceProvider;
+        private TestRequestDispatcher _requestDispatcher;
         public NationStatsCommandTests()
         {
-            _serviceProvider = ConfigureServices().BuildServiceProvider();
+            _requestDispatcher = new();
+            _serviceProvider = ConfigureServices(_requestDispatcher).BuildServiceProvider();
         }
         [Fact]
         public async Task TestEmptyExecute()
@@ -50,10 +52,10 @@ namespace CyborgianStates.Tests.CommandTests
         {
             var message = new Message(0, "nation Testlandia", new ConsoleMessageChannel());
             var command = new NationStatsCommand(_serviceProvider);
-            var source = new CancellationTokenSource();
-            source.CancelAfter(250);
+            _requestDispatcher.PrepareNextRequest(RequestStatus.Canceled);
+            var source = new CancellationTokenSource(TimeSpan.FromSeconds(2));
             command.SetCancellationToken(source.Token);
-            TestRequestDispatcher.PrepareNextRequest(RequestStatus.Canceled);
+            //source.CancelAfter(250);
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Error);
             response.Content.Should().StartWith($"Something went wrong{Environment.NewLine}{Environment.NewLine}Request/Command has been canceled. Sorry :(");
@@ -65,7 +67,7 @@ namespace CyborgianStates.Tests.CommandTests
             var message = new Message(0, "nation Testlandia", new ConsoleMessageChannel());
             var command = new NationStatsCommand(_serviceProvider);
             // HttpRequestFailed
-            TestRequestDispatcher.PrepareNextRequest(RequestStatus.Failed, exception: new HttpRequestFailedException());
+            _requestDispatcher.PrepareNextRequest(RequestStatus.Failed, exception: new HttpRequestFailedException());
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Error);
             response.Content.Should().StartWith($"Something went wrong{Environment.NewLine}{Environment.NewLine}Exception of type 'NationStatesSharp.HttpRequestFailedException' was thrown.");
@@ -74,21 +76,21 @@ namespace CyborgianStates.Tests.CommandTests
             response.Status.Should().Be(CommandStatus.Error);
             response.Content.Should().StartWith($"Something went wrong{Environment.NewLine}{Environment.NewLine}An unexpected error occured. Please contact the bot administrator.");
             // NationStats Response not XmlDocument
-            TestRequestDispatcher.PrepareNextRequest();
+            _requestDispatcher.PrepareNextRequest();
             response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Error);
             response.Content.Should().StartWith($"Something went wrong{Environment.NewLine}{Environment.NewLine}An unexpected error occured. Please contact the bot administrator.");
             // RegionalOfficer Response not XmlDocument
             var nstatsXmlResult = XDocument.Load(Path.Combine("TestData", "testlandia-nation-stats.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
-            TestRequestDispatcher.PrepareNextRequest();
+            _requestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
+            _requestDispatcher.PrepareNextRequest();
             response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Error);
             response.Content.Should().StartWith($"Something went wrong{Environment.NewLine}{Environment.NewLine}An unexpected error occured. Please contact the bot administrator.");
             // Empty RegionalOfficer Xml
-            TestRequestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
             var roResult = XDocument.Parse("<xml></xml>");
-            TestRequestDispatcher.PrepareNextRequest(response: roResult);
+            _requestDispatcher.PrepareNextRequest(response: roResult);
             response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Success);
             response.Content.Should().StartWith($"The дСвобода Мысл of Testlandia");
@@ -101,9 +103,9 @@ namespace CyborgianStates.Tests.CommandTests
             var message = new Message(0, "nation Testlandia", new ConsoleMessageChannel());
             var command = new NationStatsCommand(_serviceProvider);
             var nstatsXmlResult = XDocument.Load(Path.Combine("TestData", "testlandia-nation-stats.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
             var rofficersXmlResult = XDocument.Load(Path.Combine("TestData", "testregionia-officers.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: rofficersXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: rofficersXmlResult);
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Success);
             var dateJoined = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromDays(99.94290131428));
@@ -118,9 +120,9 @@ namespace CyborgianStates.Tests.CommandTests
             var message = new Message(0, "nation Testlandia", new ConsoleMessageChannel(), mockCommand.Object);
             var command = new NationStatsCommand(_serviceProvider);
             var nstatsXmlResult = XDocument.Load(Path.Combine("TestData", "testlandia-nation-stats.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
             var rofficersXmlResult = XDocument.Load(Path.Combine("TestData", "testregionia-officers.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: rofficersXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: rofficersXmlResult);
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Success);
             var dateJoined = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromDays(99.94290131428));

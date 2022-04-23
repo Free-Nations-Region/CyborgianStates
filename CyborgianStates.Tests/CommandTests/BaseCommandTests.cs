@@ -10,25 +10,28 @@ using NationStatesSharp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace CyborgianStates.Tests.CommandTests
 {
     public abstract class BaseCommandTests
     {
 
-        protected virtual ServiceCollection ConfigureServices()
+        protected virtual ServiceCollection ConfigureServices(IRequestDispatcher dispatcher)
         {
             var serviceCollection = new ServiceCollection();
             var options = new Mock<IOptions<AppSettings>>(MockBehavior.Strict);
             options.SetupGet(m => m.Value).Returns(new AppSettings() { SeperatorChar = '$', Locale = "en-US", Contact = "" });
-            serviceCollection.AddSingleton<IRequestDispatcher, TestRequestDispatcher>();
+            serviceCollection.AddSingleton<IRequestDispatcher>(dispatcher);
             serviceCollection.AddSingleton<IResponseBuilder, ConsoleResponseBuilder>();
             serviceCollection.AddSingleton(typeof(IOptions<AppSettings>), options.Object);
             return serviceCollection;
         }
-
+        [Fact]
         public abstract Task TestExecuteSuccess();
+        [Fact]
         public abstract Task TestCancel();
+        [Fact]
         public abstract Task TestExecuteWithErrors();
 
         internal static Mock<ISlashCommand> GetSlashCommand(Dictionary<string, object> parameters, string content = "", IUser user = null)

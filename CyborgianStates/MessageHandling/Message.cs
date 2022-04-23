@@ -44,11 +44,11 @@ namespace CyborgianStates.MessageHandling
             {
                 if (SlashCommand.HasResponded)
                 {
-                    await SlashCommand.ModifyOriginalResponseAsync(f => { f.Content = response.Content; f.Embed = response.ResponseObject; f.Components = response.Components; }).ConfigureAwait(false);
+                    await SlashCommand.ModifyOriginalResponseAsync(f => { f.Content = response.Content; f.Embed = response.ResponseObject; }).ConfigureAwait(false);
                 }
                 else
                 {
-                    await SlashCommand.RespondAsync(text: response.Content, embed: response.ResponseObject, ephemeral: !isPublic, components: response.Components).ConfigureAwait(false);
+                    await SlashCommand.RespondAsync(text: response.Content, embed: response.ResponseObject, ephemeral: !isPublic).ConfigureAwait(false);
                 }
             }
             else

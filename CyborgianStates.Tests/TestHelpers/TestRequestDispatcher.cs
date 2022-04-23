@@ -12,9 +12,9 @@ namespace CyborgianStates.Tests.Helpers
 
     public class TestRequestDispatcher : IRequestDispatcher
     {
-        private static List<RequestMockWrapper> requests = new List<RequestMockWrapper>();
+        private List<RequestMockWrapper> requests = new List<RequestMockWrapper>();
 
-        public static void PrepareNextRequest(RequestStatus status = RequestStatus.Success, object response = null, Exception exception = null)
+        public void PrepareNextRequest(RequestStatus status = RequestStatus.Success, object response = null, Exception exception = null)
         {
             requests.Add(new RequestMockWrapper()
             {
@@ -24,7 +24,19 @@ namespace CyborgianStates.Tests.Helpers
             });
         }
 
-        public void Dispatch(Request request, int priority)
+        public void AddToQueue(Request request, uint priority = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddToQueue(IEnumerable<Request> requests, uint priority = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispatch(IEnumerable<Request> requests, int priority) => throw new NotImplementedException();
+
+        public void Dispatch(Request request, uint priority = 1000)
         {
             if (!requests.Any())
             {
@@ -46,7 +58,10 @@ namespace CyborgianStates.Tests.Helpers
             }
         }
 
-        public void Dispatch(IEnumerable<Request> requests, int priority) => throw new NotImplementedException();
+        public void Dispatch(IEnumerable<Request> requests, uint priority = 1000)
+        {
+            throw new NotImplementedException();
+        }
 
         public void Shutdown() => throw new NotImplementedException();
 
