@@ -45,28 +45,33 @@ namespace CyborgianStates.Commands
 
             try
             {
-                _logger.Debug(message.Content);
+                _logger.Debug("{Message}", message.Content);
                 var parameters = message.Content.Split(" ").Skip(1);
 
                 // Checks for parameter count and extracts the first parameter or throws an exception.
                 string nation = parameters.Count() == 1
                     ? Helpers.ToID(string.Join(" ", parameters))
                     : throw new Exception();
-                
+
                 await ProcessResultAsync(message, nation).ConfigureAwait(true);
-                
+
                 CommandResponse commandResponse = _responseBuilder.Build();
                 await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
                 return commandResponse;
             }
             catch (InvalidOperationException e)
             {
-                _logger.Error(e.ToString());
+                _logger.Error("Found nation is not apart of the World Assembly. Error: {Error}",e.ToString());
                 return await FailCommandAsync(message, "Specified nation is not a WA member.").ConfigureAwait(false);
+            }
+            catch (NullReferenceException e)
+            {
+                _logger.Error("Nation cannot be found. Error: {Error}",e.ToString());
+                return await FailCommandAsync(message, "Specified nation cannot be found.").ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                _logger.Error(e.ToString());
+                _logger.Error("{Error}",e.ToString());
                 return await FailCommandAsync(message,
                     "An unexpected error occured. Please contact the bot administrator.").ConfigureAwait(false);
             }
@@ -129,8 +134,9 @@ namespace CyborgianStates.Commands
                 int chunkSize = 0;
                 while (chunkSize < limit && endorse.Count > 0)
                 {
-                    chunk.Add(endorse.Pop());
-                    chunkSize += chunk.Last().Length;
+                    string nextString = endorse.Pop();
+                    chunk.Add(nextString);
+                    chunkSize += nextString.Length;
                 }
                 
                 // Build the embed, send it, and reset it.

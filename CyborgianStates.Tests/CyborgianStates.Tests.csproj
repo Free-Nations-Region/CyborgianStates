@@ -38,4 +38,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="CommandTests\CouldEndorseCommand.cs" />
+  </ItemGroup>
 </Project>
