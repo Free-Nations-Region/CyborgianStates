@@ -18,7 +18,7 @@ namespace CyborgianStates.Commands
         private readonly ILogger _logger;
         private readonly IDumpDataService _dumpDataService;
         private readonly CultureInfo _locale;
-        public RegionStatsCommand() : base()
+        public RegionStatsCommand() : this(Program.ServiceProvider)
         {
         }
 

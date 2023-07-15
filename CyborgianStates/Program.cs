@@ -18,6 +18,7 @@ using System;
 using System.Data.Common;
 using System.Threading.Tasks;
 using CyborgianStates.Wrapper;
+using System.Data;
 
 namespace CyborgianStates
 {
@@ -103,10 +104,20 @@ namespace CyborgianStates
             {
                 throw new InvalidOperationException($"Unknown InputChannel '{InputChannel}'");
             }
+
+            
+
             var requestDispatcher = new RequestDispatcher($"({configuration.GetSection("Configuration").GetSection("Contact").Value})", Log.Logger);
+
+            
+            var sc = new SqliteConnection();
+
+
             serviceCollection.AddSingleton(typeof(IRequestDispatcher), requestDispatcher);
             serviceCollection.AddSingleton<IBotService, BotService>();
-            serviceCollection.AddSingleton<DbConnection, SqliteConnection>();
+            
+            serviceCollection.AddSingleton(typeof(IDbConnection), sc);
+
             serviceCollection.AddSingleton<IDataAccessor, DataAccessor>();
             serviceCollection.AddSingleton<IUserRepository, UserRepository>();
             serviceCollection.AddSingleton<ISqlProvider, SqliteSqlProvider>();
@@ -120,7 +131,8 @@ namespace CyborgianStates
         private static void ConfigureLogging(ServiceCollection serviceCollection, IConfiguration configuration)
         {
             var logConfig = configuration.GetSection("Serilog");
-            var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration, "Serilog").CreateLogger();
+            var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
+            
             Log.Logger = logger;
             serviceCollection.AddLogging(builder =>
             {

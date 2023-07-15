@@ -16,7 +16,18 @@ namespace CyborgianStates.Tests.MessageHandling
         public async Task WriteToTest()
         {
             var mockChannel = new Mock<Discord.IMessageChannel>(MockBehavior.Strict);
-            mockChannel.Setup(mock => mock.SendMessageAsync(It.IsAny<string>(), false, null, null, null, null, null, null, null))
+            mockChannel.Setup(mock => 
+                    mock.SendMessageAsync(
+                        It.IsAny<string>(), 
+                        It.IsAny<bool>(), 
+                        It.IsAny<Discord.Embed>(), 
+                        It.IsAny<Discord.RequestOptions>(), 
+                        It.IsAny<Discord.AllowedMentions>(), 
+                        It.IsAny<Discord.MessageReference>(), 
+                        It.IsAny<Discord.MessageComponent>(), 
+                        It.IsAny<Discord.ISticker[]>(), 
+                        It.IsAny<Discord.Embed[]>(), 
+                        It.IsAny<Discord.MessageFlags>()))
                 .Returns(Task.FromResult<Discord.IUserMessage>(null));
             var channel = new DiscordMessageChannel(mockChannel.Object, false);
             await channel.WriteToAsync("Test").ConfigureAwait(false);
@@ -31,7 +42,18 @@ namespace CyborgianStates.Tests.MessageHandling
         public async Task ReplyToTest()
         {
             var mockChannel = new Mock<Discord.IMessageChannel>(MockBehavior.Strict);
-            mockChannel.Setup(mock => mock.SendMessageAsync(It.IsAny<string>(), false, null, null, null, null, null, null, null))
+            mockChannel.Setup(mock =>
+                    mock.SendMessageAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<Discord.Embed>(),
+                        It.IsAny<Discord.RequestOptions>(),
+                        It.IsAny<Discord.AllowedMentions>(),
+                        It.IsAny<Discord.MessageReference>(),
+                        It.IsAny<Discord.MessageComponent>(),
+                        It.IsAny<Discord.ISticker[]>(),
+                        It.IsAny<Discord.Embed[]>(),
+                        It.IsAny<Discord.MessageFlags>()))
                 .Returns(Task.FromResult<Discord.IUserMessage>(null));
             var channel = new DiscordMessageChannel(mockChannel.Object, false);
             var message = new Message(0, "Test", channel);

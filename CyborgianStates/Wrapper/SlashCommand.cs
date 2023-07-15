@@ -37,6 +37,14 @@ namespace CyborgianStates.Wrapper
 
         public string GuildLocale => "en-us";
 
+        public bool IsDMInteraction => _socketSlashCommand.IsDMInteraction;
+
+        public ulong? ChannelId => _socketSlashCommand.ChannelId;
+
+        public ulong? GuildId => _socketSlashCommand.GuildId;
+
+        public ulong ApplicationId => _socketSlashCommand.ApplicationId;
+
         IDiscordInteractionData IDiscordInteraction.Data => _socketSlashCommand.Data;
 
         public Task DeferAsync(bool ephemeral = false, RequestOptions options = null) => _socketSlashCommand.DeferAsync(ephemeral, options);
@@ -58,7 +66,8 @@ namespace CyborgianStates.Wrapper
             => await _socketSlashCommand.RespondAsync(text, embeds, isTTS, ephemeral, allowedMentions, components, embed, options).ConfigureAwait(false);
         public async Task RespondWithFilesAsync(IEnumerable<FileAttachment> attachments, string text = null, Embed[] embeds = null, bool isTTS = false, bool ephemeral = false, AllowedMentions allowedMentions = null, MessageComponent components = null, Embed embed = null, RequestOptions options = null) 
             => await _socketSlashCommand.RespondWithFilesAsync(attachments, text, embeds, isTTS, ephemeral, allowedMentions, components, embed, options).ConfigureAwait(false);
-         async Task IDiscordInteraction.RespondAsync(string text, Embed[] embeds, bool isTTS, bool ephemeral, AllowedMentions allowedMentions, MessageComponent components, Embed embed, RequestOptions options) 
+        public async Task RespondWithModalAsync(Modal modal, RequestOptions options = null) => await _socketSlashCommand.RespondWithModalAsync(modal, options).ConfigureAwait(false);
+        async Task IDiscordInteraction.RespondAsync(string text, Embed[] embeds, bool isTTS, bool ephemeral, AllowedMentions allowedMentions, MessageComponent components, Embed embed, RequestOptions options) 
             => await (_socketSlashCommand as IDiscordInteraction).RespondAsync(text, embeds, isTTS, ephemeral, allowedMentions, components, embed, options).ConfigureAwait(false);
     }
 }

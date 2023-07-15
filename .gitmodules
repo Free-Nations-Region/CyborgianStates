@@ -1,0 +1,4 @@
+[submodule "NationStatesSharp"]
+	path = NationStatesSharp
+	url = https://github.com/Free-Nations-Region/NationStatesSharp.git
+	branch = usage-improvements
