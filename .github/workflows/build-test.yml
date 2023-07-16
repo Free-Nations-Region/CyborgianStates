@@ -13,21 +13,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.*
+        dotnet-version: 7.0.*
     - name: Build with dotnet
       working-directory: ./CyborgianStates.Tests
       run: |
         dotnet build ../CyborgianStates/CyborgianStates.sln
         # temporary: copy settings so tests pass. this should be removed before release
-        cp ../CyborgianStates/appsettings.json bin/Debug/net6.0/appsettings.development.json
+        cp ../CyborgianStates/appsettings.json bin/Debug/net7.0/appsettings.development.json
     - name: Run tests
       working-directory: ./CyborgianStates.Tests
       run: |
         dotnet tool install --global coverlet.console
-        ~/.dotnet/tools/coverlet bin/Debug/net6.0/CyborgianStates.Tests.dll --target "dotnet" --targetargs "test --no-build" --exclude "[*]CyborgianStates.Wrapper.*" --exclude "[*]CyborgianStates.Data.*" --exclude "[*]CyborgianStates.AppSettings" --exclude "[NationStatesSharp]*" --format opencover --output "./TestResults//"
+        ~/.dotnet/tools/coverlet bin/Debug/net7.0/CyborgianStates.Tests.dll --target "dotnet" --targetargs "test --no-build" --exclude "[*]CyborgianStates.Wrapper.*" --exclude "[*]CyborgianStates.Data.*" --exclude "[*]CyborgianStates.AppSettings" --exclude "[NationStatesSharp]*" --format opencover --output "./TestResults//"
     - name: Upload coverage to codecov.io
       uses: codecov/codecov-action@v1
       with:

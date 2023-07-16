@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\NationStatesSharp\NationStatesSharp.csproj" />
+    <ProjectReference Include="..\NationStatesSharp\NationStatesSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
