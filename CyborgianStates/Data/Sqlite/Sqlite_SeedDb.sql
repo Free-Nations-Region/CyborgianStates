@@ -1,11 +1,7 @@
-INSERT INTO "Permission"("Name") VALUES ('*.*');
-INSERT INTO "Permission"("Name") VALUES ('Commands.Execute');
-INSERT INTO "Role"("Name") VALUES ('BotAdmin');
-INSERT INTO "StatusNames"("Name") VALUES ('created');
-INSERT INTO "StatusNames"("Name") VALUES ('recruit pending');
-INSERT INTO "StatusNames"("Name") VALUES ('recruit reserved api');
-INSERT INTO "StatusNames"("Name") VALUES ('recruit reserved manual');
-INSERT INTO "StatusNames"("Name") VALUES ('recruit send');
-INSERT INTO "StatusNames"("Name") VALUES ('recruit skipped');
-INSERT INTO "StatusNames"("Name") VALUES ('resident');
-INSERT INTO "StatusNames"("Name") VALUES ('citizen');
+INSERT INTO "StatusNames"("Name") VALUES ('added');
+INSERT INTO "StatusNames"("Name") VALUES ('pending');
+INSERT INTO "StatusNames"("Name") VALUES ('send');
+INSERT INTO "StatusNames"("Name") VALUES ('api-queued');
+INSERT INTO "StatusNames"("Name") VALUES ('reserved');
+INSERT INTO "StatusNames"("Name") VALUES ('skipped');
+INSERT INTO "StatusNames"("Name") VALUES ('verified');

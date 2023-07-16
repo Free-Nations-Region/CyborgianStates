@@ -15,7 +15,7 @@ namespace CyborgianStates
         static internal bool IsTesting = false;
         private static string config = "development";
 
-        public string Footer => $"CyborgianStates {VERSION} by drehtisch · See {SeperatorChar}about";
+        public string Footer => $"CyborgianStates {VERSION} · See /about";
 
         public static string Configuration
         {

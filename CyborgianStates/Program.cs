@@ -1,7 +1,6 @@
 ﻿using CyborgianStates.Data;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
-using CyborgianStates.Repositories;
 using CyborgianStates.Services;
 using DataAbstractions.Dapper;
 using Microsoft.Data.Sqlite;
@@ -11,11 +10,8 @@ using Microsoft.Extensions.Logging;
 using NationStatesSharp;
 using NationStatesSharp.Interfaces;
 using Serilog;
-using Serilog.Core;
 using Quartz;
-using Serilog.Sinks.SystemConsole.Themes;
 using System;
-using System.Data.Common;
 using System.Threading.Tasks;
 using CyborgianStates.Wrapper;
 using System.Data;
@@ -119,7 +115,6 @@ namespace CyborgianStates
             serviceCollection.AddSingleton(typeof(IDbConnection), sc);
 
             serviceCollection.AddSingleton<IDataAccessor, DataAccessor>();
-            serviceCollection.AddSingleton<IUserRepository, UserRepository>();
             serviceCollection.AddSingleton<ISqlProvider, SqliteSqlProvider>();
             serviceCollection.AddSingleton<IDumpDataService, DumpDataService>();
             serviceCollection.AddSingleton<IDumpRetrievalService, DefaultDumpRetrievalService>();

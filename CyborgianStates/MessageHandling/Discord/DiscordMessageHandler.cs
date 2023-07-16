@@ -72,50 +72,11 @@ namespace CyborgianStates.MessageHandling
                         var slashCommand = GetSlashCommandFromCommandDefinition(command);
                         if (command.IsGlobalSlashCommand)
                         {
-                            if (globalCommands.Any(a => a.Name == command.Name))
-                            {
-                                var gCommand = globalCommands.First(a => a.Name == command.Name);
-                                if (ShouldUpdateCommand(command, gCommand))
-                                {
-                                    _logger.Information("Command '{commandName}' is already registered as global command. Updating.", command.Name);
-                                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                if (guildCommands.Any(a => a.Name == command.Name))
-                                {
-                                    var gCommand = guildCommands.First(a => a.Name == command.Name);
-                                    _logger.Information("Command '{commandName}' is already registered as guild command. Deleting. Before recreating it as global command.", command.Name);
-                                    await gCommand.DeleteAsync().ConfigureAwait(false);
-                                }
-                                await restClient.CreateGlobalCommand(slashCommand).ConfigureAwait(false);
-                                _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
-                            }
+                            await RegisterGlobalSlashCommand(restClient, guildCommands, globalCommands, command, slashCommand).ConfigureAwait(false);
                         }
                         else
                         {
-                            if (guildCommands.Any(a => a.Name == command.Name))
-                            {
-                                var gCommand = guildCommands.First(a => a.Name == command.Name);
-                                if (ShouldUpdateCommand(command, gCommand))
-                                {
-                                    _logger.Information("Command '{commandName}' is already registered as guild command for the primary guild. Updating.", command.Name);
-                                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                if (globalCommands.Any(a => a.Name == command.Name))
-                                {
-                                    var gCommand = globalCommands.First(a => a.Name == command.Name);
-                                    _logger.Information("Command '{commandName}' is already registered as global command. Deleting. Before recreating it as guild command.", command.Name);
-                                    await gCommand.DeleteAsync().ConfigureAwait(false);
-                                }
-                                    await restClient.CreateGuildCommand(slashCommand, AppSettings.PrimaryGuildId).ConfigureAwait(false);
-                                _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
-                            }
-
+                            await RegisterSlashCommand(restClient, guildCommands, globalCommands, command, slashCommand).ConfigureAwait(false);
                         }
                     }
                 }
@@ -123,6 +84,54 @@ namespace CyborgianStates.MessageHandling
             catch (Exception ex)
             {
                 _logger.Fatal(ex, "Error while registering commands.");
+            }
+        }
+
+        private async Task RegisterSlashCommand(DiscordSocketRestClient restClient, IReadOnlyCollection<RestGuildCommand> guildCommands, IReadOnlyCollection<RestGlobalCommand> globalCommands, CommandDefinition command, SlashCommandProperties slashCommand)
+        {
+            if (guildCommands.Any(a => a.Name == command.Name))
+            {
+                var gCommand = guildCommands.First(a => a.Name == command.Name);
+                if (ShouldUpdateCommand(command, gCommand))
+                {
+                    _logger.Information("Command '{commandName}' is already registered as guild command for the primary guild. Updating.", command.Name);
+                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                if (globalCommands.Any(a => a.Name == command.Name))
+                {
+                    var gCommand = globalCommands.First(a => a.Name == command.Name);
+                    _logger.Information("Command '{commandName}' is already registered as global command. Deleting. Before recreating it as guild command.", command.Name);
+                    await gCommand.DeleteAsync().ConfigureAwait(false);
+                }
+                await restClient.CreateGuildCommand(slashCommand, AppSettings.PrimaryGuildId).ConfigureAwait(false);
+                _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
+            }
+        }
+
+        private async Task RegisterGlobalSlashCommand(DiscordSocketRestClient restClient, IReadOnlyCollection<RestGuildCommand> guildCommands, IReadOnlyCollection<RestGlobalCommand> globalCommands, CommandDefinition command, SlashCommandProperties slashCommand)
+        {
+            if (globalCommands.Any(a => a.Name == command.Name))
+            {
+                var gCommand = globalCommands.First(a => a.Name == command.Name);
+                if (ShouldUpdateCommand(command, gCommand))
+                {
+                    _logger.Information("Command '{commandName}' is already registered as global command. Updating.", command.Name);
+                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                if (guildCommands.Any(a => a.Name == command.Name))
+                {
+                    var gCommand = guildCommands.First(a => a.Name == command.Name);
+                    _logger.Information("Command '{commandName}' is already registered as guild command. Deleting. Before recreating it as global command.", command.Name);
+                    await gCommand.DeleteAsync().ConfigureAwait(false);
+                }
+                await restClient.CreateGlobalCommand(slashCommand).ConfigureAwait(false);
+                _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
             }
         }
 

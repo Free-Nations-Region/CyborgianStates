@@ -22,7 +22,6 @@ namespace CyborgianStates.Tests.Services
         private Mock<IMessageChannel> msgChannelMock;
         private Mock<IMessageHandler> msgHandlerMock;
         private Mock<IRequestDispatcher> requestDispatcherMock;
-        private Mock<IUserRepository> userRepositoryMock;
         private Mock<IOptions<AppSettings>> appSettingsMock;
         private Mock<IBackgroundServiceRegistry> backgroundServiceRegistryMock;
         private Mock<IDumpRetrievalService> dumpRetrievalServiceMock;
@@ -38,8 +37,6 @@ namespace CyborgianStates.Tests.Services
             requestDispatcherMock = new Mock<IRequestDispatcher>(MockBehavior.Strict);
             requestDispatcherMock.Setup(r => r.Start());
             requestDispatcherMock.Setup(r => r.Shutdown());
-
-            userRepositoryMock = new Mock<IUserRepository>(MockBehavior.Strict);
 
             msgChannelMock = new Mock<IMessageChannel>(MockBehavior.Strict);
             appSettingsMock = new Mock<IOptions<AppSettings>>(MockBehavior.Strict);
@@ -60,7 +57,6 @@ namespace CyborgianStates.Tests.Services
             var services = new ServiceCollection();
             services.AddSingleton<IMessageHandler>(msgHandlerMock.Object);
             services.AddSingleton<IRequestDispatcher>(requestDispatcherMock.Object);
-            services.AddSingleton<IUserRepository>(userRepositoryMock.Object);
             services.AddSingleton<IResponseBuilder, ConsoleResponseBuilder>();
             services.AddSingleton<IOptions<AppSettings>>(appSettingsMock.Object);
             services.AddSingleton<IBackgroundServiceRegistry>(backgroundServiceRegistryMock.Object);
@@ -88,9 +84,6 @@ namespace CyborgianStates.Tests.Services
         [Fact]
         public async Task TestIsRelevant()
         {
-            userRepositoryMock.Setup(u => u.IsUserInDbAsync(It.IsAny<ulong>())).Returns(() => Task.FromResult(false));
-            userRepositoryMock.Setup(u => u.AddUserToDbAsync(It.IsAny<ulong>())).Returns(() => Task.CompletedTask);
-            userRepositoryMock.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ulong>())).Returns<string, ulong>((perm, id) => Task.FromResult(id == 0));
             msgChannelMock.Setup(m => m.WriteToAsync(It.IsAny<CommandResponse>())).Returns(Task.CompletedTask);
 
             var slashCommand = BaseCommandTests.GetSlashCommand(new());
@@ -124,9 +117,6 @@ namespace CyborgianStates.Tests.Services
         public async Task TestStartupProgressMessageAndShutDown()
         {
             Program.ServiceProvider = Program.ConfigureServices();
-            userRepositoryMock.Setup(u => u.IsUserInDbAsync(It.IsAny<ulong>())).Returns(() => Task.FromResult(true));
-            userRepositoryMock.Setup(u => u.AddUserToDbAsync(It.IsAny<ulong>())).Returns(() => Task.CompletedTask);
-            userRepositoryMock.Setup(u => u.IsAllowedAsync(It.IsAny<string>(), It.IsAny<ulong>())).Returns(() => Task.FromResult(true));
 
             CommandHandler.Clear();
             CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));

@@ -22,7 +22,6 @@ namespace CyborgianStates.Services
         private readonly ILogger _logger;
         private readonly IMessageHandler _messageHandler;
         private readonly IRequestDispatcher _requestDispatcher;
-        private readonly IUserRepository _userRepo;
         private readonly IBackgroundServiceRegistry _backgroundServiceRegistry;
         private readonly IServiceProvider _serviceProvider;
         public BotService() : this(Program.ServiceProvider)
@@ -34,7 +33,6 @@ namespace CyborgianStates.Services
             _serviceProvider = serviceProvider;
             _messageHandler = _serviceProvider.GetRequiredService<IMessageHandler>();
             _requestDispatcher = _serviceProvider.GetRequiredService<IRequestDispatcher>();
-            _userRepo = _serviceProvider.GetRequiredService<IUserRepository>();
             _logger = Log.Logger.ForContext<BotService>();
             _backgroundServiceRegistry = _serviceProvider.GetRequiredService<IBackgroundServiceRegistry>();
         }
@@ -84,7 +82,7 @@ namespace CyborgianStates.Services
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
                     },
-                    //IsGlobalSlashCommand = true,
+                    IsGlobalSlashCommand = true
                 });
             CommandHandler.Register(
                 new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" })
@@ -92,7 +90,7 @@ namespace CyborgianStates.Services
                     Name = "about",
                     Description = "Let me tell you something about myself.",
                     IsSlashCommand = true,
-                    /*IsGlobalSlashCommand = true*/
+                    IsGlobalSlashCommand = true
                 });
             CommandHandler.Register(
                 new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" })
@@ -104,7 +102,7 @@ namespace CyborgianStates.Services
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
                     },
-                    //IsGlobalSlashCommand = true
+                    IsGlobalSlashCommand = true
                 });
         }
 
@@ -115,16 +113,7 @@ namespace CyborgianStates.Services
                 throw new ArgumentNullException(nameof(message));
             }
 
-            if (message.AuthorId != 0 && !await _userRepo.IsUserInDbAsync(message.AuthorId).ConfigureAwait(false))
-            {
-                await _userRepo.AddUserToDbAsync(message.AuthorId).ConfigureAwait(false);
-            }
-            var value = !string.IsNullOrWhiteSpace(message.Content);
-            return value &&
-                (message.AuthorId == 0 ||
-                await _userRepo.IsAllowedAsync(
-                    AppSettings.Configuration == "development" ? "Commands.Preview.Execute" : "Commands.Execute",
-                    message.AuthorId).ConfigureAwait(false));
+            return !string.IsNullOrWhiteSpace(message.Content);
         }
 
         private async Task ProcessMessageAsync(MessageReceivedEventArgs e)
