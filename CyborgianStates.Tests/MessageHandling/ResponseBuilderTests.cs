@@ -61,5 +61,50 @@ namespace CyborgianStates.Tests.MessageHandling
             response.ResponseObject.Should().NotBeNull();
             response.ResponseObject.Should().BeAssignableTo<Embed>();
         }
+
+        [Fact]
+        public void DiscordResponseBuilder_Clear_Successfully()
+        {
+            var builder = new DiscordResponseBuilder()
+               .Failed("Reason")
+               .WithTitle("Title")
+               .WithThumbnailUrl("https://localhost/image.jpg")
+               .WithDescription("Description")
+               .WithDefaults("Footer")
+               .WithField("Key1", "Value")
+               .WithContent("BlaBla")
+               .WithUrl("https://localhost");
+            var response = builder.Build();
+            response.Status.Should().Be(CommandStatus.Error);
+            response.Content.Should().Be("BlaBla");
+            response.ResponseObject.Should().NotBeNull();
+            response.ResponseObject.Should().BeAssignableTo<Embed>();
+            builder.Clear();
+            response = builder.Build();
+            response.ResponseObject.Should().BeNull();
+            response.Status.Should().Be(CommandStatus.Success);
+            response.Content.Should().BeNull();
+        }
+
+        [Fact]
+        public void ConsoleResponseBuilder_Clear_Successfully()
+        {
+            var builder = new ConsoleResponseBuilder()
+               .Failed("Reason")
+               .WithTitle("Title")
+               .WithThumbnailUrl("https://localhost/image.jpg")
+               .WithDescription("Description")
+               .WithDefaults("Footer")
+               .WithField("Key1", "Value")
+               .WithContent("BlaBla")
+               .WithUrl("https://localhost");
+            var response = builder.Build();
+            response.Status.Should().Be(CommandStatus.Error);
+            response.Content.Should().Contain("BlaBla");
+            builder.Clear();
+            response = builder.Build();
+            response.Status.Should().Be(CommandStatus.Success);
+            response.Content.Should().BeEmpty();
+        }
     }
 }
