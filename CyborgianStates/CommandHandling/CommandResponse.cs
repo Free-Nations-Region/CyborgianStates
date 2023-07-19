@@ -1,4 +1,6 @@
-﻿namespace CyborgianStates.CommandHandling
+﻿using Discord;
+
+namespace CyborgianStates.CommandHandling
 {
     public enum CommandStatus
     {
@@ -17,6 +19,6 @@
 
         public string Content { get; internal set; }
         public CommandStatus Status { get; internal set; }
-        public object ResponseObject { get; internal set; }
+        public Embed ResponseObject { get; internal set; }
     }
 }

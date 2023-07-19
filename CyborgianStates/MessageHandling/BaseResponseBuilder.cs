@@ -17,10 +17,7 @@ namespace CyborgianStates.MessageHandling
 
         public abstract CommandResponse Build();
 
-        public BaseResponseBuilder()
-        {
-            _response = new CommandResponse();
-        }
+        public BaseResponseBuilder() => _response = new CommandResponse();
 
         public IResponseBuilder Failed(string reason)
         {
@@ -62,7 +59,7 @@ namespace CyborgianStates.MessageHandling
         {
             _properties.Clear();
             _fields.Clear();
-            _response = new CommandResponse();
+            _response = new();
         }
     }
 }

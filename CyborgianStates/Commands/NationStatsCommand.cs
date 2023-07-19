@@ -8,6 +8,7 @@ using CyborgianStates.CommandHandling;
 using CyborgianStates.Enums;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,27 +20,17 @@ using IRequestDispatcher = NationStatesSharp.Interfaces.IRequestDispatcher;
 
 namespace CyborgianStates.Commands
 {
-    public class NationStatsCommand : ICommand
+    public class NationStatsCommand : BaseCommand
     {
-        private readonly AppSettings _config;
-        private readonly IRequestDispatcher _dispatcher;
-        private readonly IResponseBuilder _responseBuilder;
         private readonly ILogger _logger;
-        private CancellationToken token;
 
-        public NationStatsCommand() : this(Program.ServiceProvider)
+        public NationStatsCommand() : base()
         {
         }
 
-        public NationStatsCommand(IServiceProvider serviceProvider)
-        {
-            _logger = Log.ForContext<NationStatsCommand>();
-            _dispatcher = serviceProvider.GetRequiredService<IRequestDispatcher>();
-            _config = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
-            _responseBuilder = serviceProvider.GetRequiredService<IResponseBuilder>();
-        }
+        public NationStatsCommand(IServiceProvider serviceProvider) : base(serviceProvider) => _logger = Log.ForContext<NationStatsCommand>();
 
-        public async Task<CommandResponse> Execute(Message message)
+        public override async Task<CommandResponse> Execute(Message message)
         {
             if (message is null)
             {
@@ -47,23 +38,11 @@ namespace CyborgianStates.Commands
             }
             try
             {
-                _logger.Debug(message.Content);
-                var parameters = message.Content.Split(" ").Skip(1);
-                if (parameters.Any())
-                {
-                    string nationName = Helpers.ToID(string.Join(" ", parameters));
-                    var request = new Request($"nation={nationName}&q=flag+wa+gavote+scvote+fullname+freedom+demonym2plural+category+population+region+founded+foundedtime+influence+lastactivity+census;mode=score;scale=0+1+2+65+66+80", ResponseFormat.Xml);
-                    _dispatcher.Dispatch(request, 0);
-                    await request.WaitForResponseAsync(token).ConfigureAwait(false);
-                    await ProcessResultAsync(request, nationName).ConfigureAwait(false);
-                    CommandResponse commandResponse = _responseBuilder.Build();
-                    await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
-                    return commandResponse;
-                }
-                else
-                {
-                    return await FailCommandAsync(message, "No parameter passed.").ConfigureAwait(false);
-                }
+                await message.DeferAsync().ConfigureAwait(false);
+                var nationName = GetNationName(message);
+                return !string.IsNullOrWhiteSpace(nationName)
+                    ? await GetNationStatsResponseAsync(message, Helpers.ToID(nationName)).ConfigureAwait(false)
+                    : await FailCommandAsync(message, "No parameter passed.", Discord.Color.Red, "That didn't work.").ConfigureAwait(false);
             }
             catch (TaskCanceledException e)
             {
@@ -82,37 +61,55 @@ namespace CyborgianStates.Commands
             }
         }
 
-        public void SetCancellationToken(CancellationToken cancellationToken)
+        private static string GetNationName(Message message)
         {
-            token = cancellationToken;
+            if (message.IsSlashCommand)
+            {
+                var commandParams = message.SlashCommand.Data.Options;
+                return (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
+            }
+            else if (message.Content.Contains(' '))
+            {
+                var parameters = message.Content.Split(" ").Skip(1);
+                return string.Join(" ", parameters);
+            }
+            else
+            {
+                return null;
+            }
+
         }
 
-        private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
+        private async Task<CommandResponse> GetNationStatsResponseAsync(Message message, string nationName)
         {
-            _responseBuilder.Clear();
-            _responseBuilder.FailWithDescription(reason)
-                .WithFooter(_config.Footer);
-            var response = _responseBuilder.Build();
-            await message.Channel.ReplyToAsync(message, response).ConfigureAwait(false);
-            return response;
+            var request = new Request($"nation={nationName}&q=flag+wa+gavote+scvote+fullname+freedom+demonym2plural+category+population+region+founded+foundedtime+influence+lastactivity+census;mode=score;scale=0+1+2+65+66+80", ResponseFormat.Xml);
+            _dispatcher.Dispatch(request, 0);
+            await request.WaitForResponseAsync(_token).ConfigureAwait(false);
+            await ProcessResultAsync(request, nationName).ConfigureAwait(false);
+            CommandResponse commandResponse = _responseBuilder.Build();
+            await message.ReplyAsync(commandResponse).ConfigureAwait(false);
+            return commandResponse;
         }
+
+        //private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
+        //{
+        //    _responseBuilder.Clear();
+        //    _responseBuilder.FailWithDescription(reason)
+        //        .WithFooter(_config.Footer);
+        //    var response = _responseBuilder.Build();
+        //    await message.ReplyAsync(response).ConfigureAwait(false);
+        //    return response;
+        //}
 
         private async Task<string> GetOfficerPositionAsync(string nationName, string regionName)
         {
             var request = new Request($"region={Helpers.ToID(regionName)}&q=officers", ResponseFormat.Xml);
             _dispatcher.Dispatch(request, 0);
-            await request.WaitForResponseAsync(token).ConfigureAwait(false);
+            await request.WaitForResponseAsync(_token).ConfigureAwait(false);
             var doc = request.GetResponseAsXml();
 
             var list = doc.GetParentsOfFilteredDescendants("NATION", nationName);
-            if (list.Any())
-            {
-                return list.First().Element("OFFICE")?.Value;
-            }
-            else
-            {
-                return string.Empty;
-            }
+            return list.Any() ? (list.First().Element("OFFICE")?.Value) : string.Empty;
         }
 
         private async Task ProcessResultAsync(Request request, string nationName)

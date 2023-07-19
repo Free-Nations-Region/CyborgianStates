@@ -9,7 +9,7 @@ namespace CyborgianStates.Services
 {
     public class BackgroundServiceRegistry : IBackgroundServiceRegistry
     {
-        private List<IBackgroundService> _backgroundServices = new List<IBackgroundService>();
+        private List<IBackgroundService> _backgroundServices = new();
         private ISchedulerFactory _factory;
         private IScheduler _scheduler;
 

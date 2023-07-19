@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 
-namespace CyborgianStates.MessageHandling
+namespace CyborgianStates.Wrapper
 {
     public class DiscordClientWrapper : DiscordSocketClient
     {
@@ -11,30 +11,15 @@ namespace CyborgianStates.MessageHandling
         public virtual bool IsTest { get; } = false;
         public DiscordClientWrapper(DiscordSocketConfig config) : base(config) { }
 
-        public new virtual Task StartAsync()
-        {
-            return IsTest ? Task.CompletedTask : base.StartAsync();
-        }
+        public new virtual Task StartAsync() => IsTest ? Task.CompletedTask : base.StartAsync();
 
-        public new virtual Task StopAsync()
-        {
-            return IsTest ? Task.CompletedTask : base.StopAsync();
-        }
+        public new virtual Task StopAsync() => IsTest ? Task.CompletedTask : base.StopAsync();
 
-        public new virtual Task LogoutAsync()
-        {
-            return IsTest ? Task.CompletedTask : base.StopAsync();
-        }
+        public new virtual Task LogoutAsync() => IsTest ? Task.CompletedTask : base.StopAsync();
 
-        public new virtual Task LoginAsync(TokenType tokenType, string token, bool validateToken = true)
-        {
-            return IsTest ? Task.CompletedTask : base.LoginAsync(tokenType, token, validateToken);
-        }
+        public new virtual Task LoginAsync(TokenType tokenType, string token, bool validateToken = true) => IsTest ? Task.CompletedTask : base.LoginAsync(tokenType, token, validateToken);
 
-        public new virtual void Dispose()
-        {
-            base.Dispose();
-        }
+        public new virtual void Dispose() => base.Dispose();
 
         public new virtual event Func<Task> Ready
         {

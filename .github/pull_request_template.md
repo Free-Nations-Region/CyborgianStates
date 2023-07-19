@@ -32,7 +32,7 @@
 
 ## Types of changes
 
-<!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
+<!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: Please remove what doesn't apply -->
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 
@@ -57,8 +57,6 @@
 - [ ] I have added tests to cover my changes.
 
 - [ ] All new and existing tests passed.
-
-- [ ] I have read the **CONTRIBUTING** document.
 
 
 

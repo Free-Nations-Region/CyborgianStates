@@ -31,10 +31,7 @@ namespace CyborgianStates.Commands
         public abstract Task<CommandResponse> Execute(Message message);
         public void SetCancellationToken(CancellationToken cancellationToken) => _token = cancellationToken;
 
-        protected async Task<CommandResponse> FailCommandAsync(Message message, string reason)
-        {
-            return await FailCommandAsync(message, reason, Discord.Color.Red).ConfigureAwait(false);
-        }
+        protected async Task<CommandResponse> FailCommandAsync(Message message, string reason) => await FailCommandAsync(message, reason, Discord.Color.Red).ConfigureAwait(false);
         protected async Task<CommandResponse> FailCommandAsync(Message message, string reason, Discord.Color color, string title = null)
         {
             _responseBuilder.Clear();
@@ -46,7 +43,7 @@ namespace CyborgianStates.Commands
                 _responseBuilder.WithTitle(title);
             }
             var response = _responseBuilder.Build();
-            await message.Channel.ReplyToAsync(message, response).ConfigureAwait(false);
+            await message.ReplyAsync(response).ConfigureAwait(false);
             return response;
         }
     }
