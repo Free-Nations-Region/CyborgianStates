@@ -1,5 +1,6 @@
 ﻿using NationStatesSharp.Enums;
 using System;
+using System.Threading;
 
 namespace CyborgianStates.Tests.Helpers
 {
@@ -8,5 +9,6 @@ namespace CyborgianStates.Tests.Helpers
         public RequestStatus Status { get; init; }
         public object Response { get; init; }
         public Exception Exception { get; init; }
+        public CancellationToken Token { get; init; }
     }
 }

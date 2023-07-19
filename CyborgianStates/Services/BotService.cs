@@ -2,6 +2,8 @@
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using Discord;
+using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,9 +22,6 @@ namespace CyborgianStates.Services
         private readonly ILogger _logger;
         private readonly IMessageHandler _messageHandler;
         private readonly IRequestDispatcher _requestDispatcher;
-        private readonly IUserRepository _userRepo;
-        private readonly IResponseBuilder _responseBuilder;
-        private readonly AppSettings _appSettings;
         private readonly IBackgroundServiceRegistry _backgroundServiceRegistry;
         private readonly IServiceProvider _serviceProvider;
         public BotService() : this(Program.ServiceProvider)
@@ -34,10 +33,7 @@ namespace CyborgianStates.Services
             _serviceProvider = serviceProvider;
             _messageHandler = _serviceProvider.GetRequiredService<IMessageHandler>();
             _requestDispatcher = _serviceProvider.GetRequiredService<IRequestDispatcher>();
-            _userRepo = _serviceProvider.GetRequiredService<IUserRepository>();
             _logger = Log.Logger.ForContext<BotService>();
-            _responseBuilder = _serviceProvider.GetRequiredService<IResponseBuilder>();
-            _appSettings = _serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
             _backgroundServiceRegistry = _serviceProvider.GetRequiredService<IBackgroundServiceRegistry>();
         }
 
@@ -74,26 +70,50 @@ namespace CyborgianStates.Services
 
         private static void RegisterCommands()
         {
-            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
-            CommandHandler.Register(new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" }));
-            CommandHandler.Register(new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" }));
-            CommandHandler.Register(new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" }));
+            CommandHandler.Register(
+                new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { Name = "ping", Description = "Pong's you, lol.", IsSlashCommand = true, /*IsGlobalSlashCommand = true*/ });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" })
+                {
+                    Name = "nation",
+                    Description = "Gets you some cool info about a NationStates Nation.",
+                    IsSlashCommand = true,
+                    SlashCommandParameters = new List<SlashCommandParameter>
+                    {
+                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
+                    },
+                    IsGlobalSlashCommand = true
+                });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" })
+                {
+                    Name = "about",
+                    Description = "Let me tell you something about myself.",
+                    IsSlashCommand = true,
+                    IsGlobalSlashCommand = true
+                });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" })
+                {
+                    Name = "region",
+                    Description = "Get you some cool info about a NationStates Region.",
+                    IsSlashCommand = true,
+                    SlashCommandParameters = new List<SlashCommandParameter>
+                    {
+                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
+                    },
+                    IsGlobalSlashCommand = true
+                });
         }
 
         private async Task<bool> IsRelevantAsync(Message message)
         {
             if (message is null)
-                throw new ArgumentNullException(nameof(message));
-            if (message.AuthorId != 0 && !await _userRepo.IsUserInDbAsync(message.AuthorId).ConfigureAwait(false))
             {
-                await _userRepo.AddUserToDbAsync(message.AuthorId).ConfigureAwait(false);
+                throw new ArgumentNullException(nameof(message));
             }
-            var value = !string.IsNullOrWhiteSpace(message.Content);
-            return value &&
-                (message.AuthorId == 0 ||
-                await _userRepo.IsAllowedAsync(
-                    AppSettings.Configuration == "development" ? "Commands.Preview.Execute" : "Commands.Execute",
-                    message.AuthorId).ConfigureAwait(false));
+
+            return !string.IsNullOrWhiteSpace(message.Content);
         }
 
         private async Task ProcessMessageAsync(MessageReceivedEventArgs e)
@@ -108,6 +128,24 @@ namespace CyborgianStates.Services
                         if (result == null)
                         {
                             _logger.Error($"Unknown command trigger {e.Message.Content}");
+                            if (e.Message.IsSlashCommand)
+                            {
+                                await e.Message.ReplyAsync("Hmm...That didn't work. I don't know what to do. This is not intended. Please contact BotAdmin to get this fixed.").ConfigureAwait(false);
+                            }
+                        }
+                        else
+                        {
+                            if (!e.Message.HasResponded)
+                            {
+                                await e.Message.ReplyAsync(result).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (e.Message.IsSlashCommand)
+                        {
+                            await e.Message.ReplyAsync("Hmm...You don't seem to have the permission to execute that command. Sorry. :(").ConfigureAwait(false);
                         }
                     }
                 }

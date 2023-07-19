@@ -1,7 +1,6 @@
 ﻿using CyborgianStates.Data;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
-using CyborgianStates.Repositories;
 using CyborgianStates.Services;
 using DataAbstractions.Dapper;
 using Microsoft.Data.Sqlite;
@@ -11,12 +10,11 @@ using Microsoft.Extensions.Logging;
 using NationStatesSharp;
 using NationStatesSharp.Interfaces;
 using Serilog;
-using Serilog.Core;
 using Quartz;
-using Serilog.Sinks.SystemConsole.Themes;
 using System;
-using System.Data.Common;
 using System.Threading.Tasks;
+using CyborgianStates.Wrapper;
+using System.Data;
 
 namespace CyborgianStates
 {
@@ -43,10 +41,7 @@ namespace CyborgianStates
             }
         }
 
-        public static void SetLauncher(ILauncher launcher)
-        {
-            Launcher = launcher;
-        }
+        public static void SetLauncher(ILauncher launcher) => Launcher = launcher;
 
         public static void SetUserInput(IUserInput input)
         {
@@ -105,12 +100,21 @@ namespace CyborgianStates
             {
                 throw new InvalidOperationException($"Unknown InputChannel '{InputChannel}'");
             }
+
+            
+
             var requestDispatcher = new RequestDispatcher($"({configuration.GetSection("Configuration").GetSection("Contact").Value})", Log.Logger);
+
+            
+            var sc = new SqliteConnection();
+
+
             serviceCollection.AddSingleton(typeof(IRequestDispatcher), requestDispatcher);
             serviceCollection.AddSingleton<IBotService, BotService>();
-            serviceCollection.AddSingleton<DbConnection, SqliteConnection>();
+            
+            serviceCollection.AddSingleton(typeof(IDbConnection), sc);
+
             serviceCollection.AddSingleton<IDataAccessor, DataAccessor>();
-            serviceCollection.AddSingleton<IUserRepository, UserRepository>();
             serviceCollection.AddSingleton<ISqlProvider, SqliteSqlProvider>();
             serviceCollection.AddSingleton<IDumpDataService, DumpDataService>();
             serviceCollection.AddSingleton<IDumpRetrievalService, DefaultDumpRetrievalService>();
@@ -122,7 +126,8 @@ namespace CyborgianStates
         private static void ConfigureLogging(ServiceCollection serviceCollection, IConfiguration configuration)
         {
             var logConfig = configuration.GetSection("Serilog");
-            var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration, "Serilog").CreateLogger();
+            var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
+            
             Log.Logger = logger;
             serviceCollection.AddLogging(builder =>
             {

@@ -2,6 +2,7 @@ using CyborgianStates.CommandHandling;
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using Discord;
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,27 @@ namespace CyborgianStates.Tests.CommandHandling
         public async Task TestExecutePingCommand()
         {
             CommandHandler.Clear();
-            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
+            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" })
+            {
+                IsSlashCommand = true,
+                IsGlobalSlashCommand = true,
+                Name = "ping",
+                Description = "Pings",
+                SlashCommandParameters = new List<SlashCommandParameter>
+                {
+                    new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
+                }
+            });
+            var def = CommandHandler.Definitions[0];
+            def.Name.Should().Be("ping");
+            def.Description.Should().Be("Pings");
+            def.IsSlashCommand.Should().BeTrue();
+            def.SlashCommandParameters.Count.Should().Be(1);
+            var defParam = def.SlashCommandParameters[0];
+            defParam.Name.Should().Be("name");
+            defParam.Description.Should().Be("The region name");
+            defParam.IsRequired.Should().BeFalse();
+            defParam.Type.Should().Be(ApplicationCommandOptionType.String);
             var result = await CommandHandler.ExecuteAsync(new Message(0, "ping ", new ConsoleMessageChannel())).ConfigureAwait(false);
             result.Should().BeOfType<CommandResponse>();
             result.Status.Should().Be(CommandStatus.Success);
@@ -40,8 +61,9 @@ namespace CyborgianStates.Tests.CommandHandling
         public void TestRegisterCommand()
         {
             CommandHandler.Clear();
-            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }));
+            CommandHandler.Register(new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { IsGlobalSlashCommand = false });
             CommandHandler.Count.Should().Be(1);
+            CommandHandler.Definitions.Count.Should().Be(1);
         }
 
         [Fact]

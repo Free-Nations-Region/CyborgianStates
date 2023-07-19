@@ -5,24 +5,11 @@ namespace CyborgianStates.Data
 {
     public class SqliteSqlProvider : ISqlProvider // -> BaseSqlProvider with all SQLs that are the same for all Datbases
     {
-        private Dictionary<string, string> sqlDict = new Dictionary<string, string>();
+        private Dictionary<string, string> sqlDict = new();
 
-        public SqliteSqlProvider()
-        {
-            InitDictionary();
-        }
+        public SqliteSqlProvider() => InitDictionary();
 
-        public string GetSql(string key)
-        {
-            if (sqlDict.TryGetValue(key, out string sql))
-            {
-                return sql;
-            }
-            else
-            {
-                throw new KeyNotFoundException($"No sql for key '{key}' found.");
-            }
-        }
+        public string GetSql(string key) => sqlDict.TryGetValue(key, out string sql) ? sql : throw new KeyNotFoundException($"No sql for key '{key}' found.");
 
         private void InitDictionary()
         {

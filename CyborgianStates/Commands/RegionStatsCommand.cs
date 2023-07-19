@@ -36,30 +36,17 @@ namespace CyborgianStates.Commands
             }
             try
             {
+                await message.DeferAsync().ConfigureAwait(false);
                 if (_dumpDataService.Status == Enums.DumpDataStatus.Ready)
                 {
-                    _logger.Debug(message.Content);
-                    var parameters = message.Content.Split(" ").Skip(1).ToList();
-                    if (!parameters.Any())
-                    {
-                        parameters.Add("The Free Nations Region");
-                    }
-                    string regionName = Helpers.ToID(string.Join(" ", parameters));
-                    var request = new Request($"region={regionName}&q=name+numnations+founded+foundedtime+tags+delegate+census+power;mode=score;scale=65", ResponseFormat.Xml);
-                    _dispatcher.Dispatch(request, 0);
-                    await request.WaitForResponseAsync(_token).ConfigureAwait(false);
-                    await ProcessResultAsync(request, regionName).ConfigureAwait(false);
-                    CommandResponse commandResponse = _responseBuilder.Build();
-                    await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
-                    return commandResponse;
-                }
-                else if (_dumpDataService.Status == Enums.DumpDataStatus.Updating)
-                {
-                    return await FailCommandAsync(message, "Dump Information is currently updating. Please try again later. Avg. ETA: ~15 s", Discord.Color.Gold, "Dump Data updating").ConfigureAwait(false);
+                    string regionName = Helpers.ToID(GetRegionName(message));
+                    return await GetRegionStatsResponseAsync(message, regionName).ConfigureAwait(false);
                 }
                 else
                 {
-                    return await FailCommandAsync(message, $"Dump Data Service is in Status ({_dumpDataService.Status}) from which it can not recover on its own. Please contact the bot administrator.").ConfigureAwait(false);
+                    return _dumpDataService.Status == Enums.DumpDataStatus.Updating
+                        ? await FailCommandAsync(message, "Dump Information is currently updating. Please try again later. Avg. ETA: ~15 s", Discord.Color.Gold, "Dump Data updating").ConfigureAwait(false)
+                        : await FailCommandAsync(message, $"Dump Data Service is in Status ({_dumpDataService.Status}) from which it can not recover on its own. Please contact the bot administrator.").ConfigureAwait(false);
                 }
             }
             catch (TaskCanceledException e)
@@ -79,6 +66,32 @@ namespace CyborgianStates.Commands
             }
         }
 
+        private async Task<CommandResponse> GetRegionStatsResponseAsync(Message message, string regionName)
+        {
+            var request = new Request($"region={regionName}&q=name+numnations+founded+foundedtime+tags+delegate+census+power;mode=score;scale=65", ResponseFormat.Xml);
+            _dispatcher.Dispatch(request, 0);
+            await request.WaitForResponseAsync(_token).ConfigureAwait(false);
+            await ProcessResultAsync(request, regionName).ConfigureAwait(false);
+            CommandResponse commandResponse = _responseBuilder.Build();
+            await message.ReplyAsync(commandResponse).ConfigureAwait(false);
+            return commandResponse;
+        }
+
+        private static string GetRegionName(Message message)
+        {
+            string result = string.Empty;
+            if (message.IsSlashCommand)
+            {
+                var commandParams = message.SlashCommand.Data.Options;
+                result = (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
+            }
+            else if (message.Content.Contains(' '))
+            {
+                var parameters = message.Content.Split(" ").Skip(1);
+                result = string.Join(" ", parameters);
+            }
+            return string.IsNullOrWhiteSpace(result) ? "The Free Nations Region" : result;
+        }
         private async Task ProcessResultAsync(Request request, string regionName)
         {
             var dumpRegion = _dumpDataService.GetRegionByName(regionName);
@@ -95,7 +108,7 @@ namespace CyborgianStates.Commands
             var power = response.GetFirstValueByNodeName("POWER");
             var regionalAvgInfluence = response.Descendants("SCALE").Where(e => e.Attribute("id").Value == "65").FirstOrDefault()?.Value;
             var tags = response.Descendants().Where(e => e.Name == "TAG").Select(e => e.Value);
-            var waNationsCount = _dumpDataService.GetWANationsByRegionName(regionName).Count();
+            var waNationsCount = _dumpDataService.GetWANationsByRegionName(regionName).Count;
             var endoCount = _dumpDataService.GetEndoSumByRegionName(regionName);
 
             var firstOffice = await GetFirstOfficeAndOfficerAsync(regionName).ConfigureAwait(false);

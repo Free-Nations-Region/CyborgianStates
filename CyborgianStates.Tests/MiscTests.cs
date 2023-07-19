@@ -13,6 +13,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
 using Xunit;
+using CyborgianStates.Wrapper;
 
 namespace CyborgianStates.Tests
 {

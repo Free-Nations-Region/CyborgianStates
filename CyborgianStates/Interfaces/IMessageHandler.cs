@@ -19,10 +19,7 @@ namespace CyborgianStates.Interfaces
 
     public class MessageReceivedEventArgs
     {
-        public MessageReceivedEventArgs(Message message)
-        {
-            Message = message;
-        }
+        public MessageReceivedEventArgs(Message message) => Message = message;
 
         public Message Message { get; }
     }

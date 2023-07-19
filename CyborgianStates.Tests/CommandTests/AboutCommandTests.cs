@@ -2,6 +2,7 @@
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using CyborgianStates.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -16,14 +17,25 @@ using Xunit;
 
 namespace CyborgianStates.Tests.CommandTests
 {
-    public class AboutCommandTests
+    public class AboutCommandTests : BaseCommandTests
     {
-        [Fact]
-        public async Task TestExecuteSuccess()
+        private IServiceProvider _serviceProvider;
+        public AboutCommandTests()
         {
+            _serviceProvider = ConfigureServices(new TestRequestDispatcher()).BuildServiceProvider();
+        }
+
+        [Fact]
+        public override async Task TestExecuteSuccess()
+        {
+            var sp = Program.ServiceProvider;
+            Program.ServiceProvider = _serviceProvider;
+            _ = new AboutCommand();
+            Program.ServiceProvider = sp;
+
             var message = new Message(0, "about", new ConsoleMessageChannel());
 
-            var command = new AboutCommand(ConfigureServices());
+            var command = new AboutCommand(_serviceProvider);
             command.SetCancellationToken(CancellationToken.None);
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Success);
@@ -31,16 +43,16 @@ namespace CyborgianStates.Tests.CommandTests
             response.Content.Should().Contain("Developed by Drehtisch");
             response.Content.Should().Contain($"Github{Environment.NewLine}[CyborgianStates]");
             response.Content.Should().Contain($"Support{Environment.NewLine}via [OpenCollective]");
+            
+        }
+        public override Task TestCancel()
+        {
+            return Task.CompletedTask;
         }
 
-        private IServiceProvider ConfigureServices()
+        public override Task TestExecuteWithErrors()
         {
-            var services = new ServiceCollection();
-            var options = new Mock<IOptions<AppSettings>>(MockBehavior.Strict);
-            options.SetupGet(m => m.Value).Returns(new AppSettings() { SeperatorChar = '$', Contact = "contact@example.com" });
-            services.AddSingleton<IResponseBuilder, ConsoleResponseBuilder>();
-            services.AddSingleton(typeof(IOptions<AppSettings>), options.Object);
-            return services.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true });
+            return Task.CompletedTask;
         }
     }
 }

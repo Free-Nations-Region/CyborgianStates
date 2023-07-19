@@ -8,6 +8,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NationStatesSharp.Enums;
+using NationStatesSharp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,15 +24,16 @@ namespace CyborgianStates.Tests.CommandTests
     {
         private IServiceProvider _serviceProvider;
         private Mock<IDumpDataService> _dumpDataService;
+        private TestRequestDispatcher _requestDispatcher;
         public RegionStatsCommandTests()
         {
             _dumpDataService = new Mock<IDumpDataService>(MockBehavior.Strict);
-            _serviceProvider = ConfigureServices().BuildServiceProvider();
+            _requestDispatcher = new(); 
         }
 
-        protected override ServiceCollection ConfigureServices()
+        protected override ServiceCollection ConfigureServices(IRequestDispatcher dispatcher)
         {
-            var collection = base.ConfigureServices();
+            var collection = base.ConfigureServices(dispatcher);
             collection.AddSingleton<IDumpDataService>(_dumpDataService.Object);
             return collection;
         }
@@ -40,14 +42,14 @@ namespace CyborgianStates.Tests.CommandTests
         public async override Task TestCancel()
         {
             _dumpDataService.SetupGet(m => m.Status).Returns(Enums.DumpDataStatus.Ready);
-            var collection = ConfigureServices();
+            var collection = ConfigureServices(_requestDispatcher);
             _serviceProvider = collection.BuildServiceProvider();
             var message = new Message(0, "region The Free Nations Region", new ConsoleMessageChannel());
             var command = new RegionStatsCommand(_serviceProvider);
-            var source = new CancellationTokenSource();
-            source.CancelAfter(250);
+            _requestDispatcher.PrepareNextRequest(RequestStatus.Canceled);
+            var source = new CancellationTokenSource(TimeSpan.FromSeconds(2));
             command.SetCancellationToken(source.Token);
-            TestRequestDispatcher.PrepareNextRequest(RequestStatus.Canceled);
+            //source.CancelAfter(250);
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Error);
             response.Content.Should().StartWith($"Something went wrong{Environment.NewLine}{Environment.NewLine}Request/Command has been canceled. Sorry :(");
@@ -62,21 +64,43 @@ namespace CyborgianStates.Tests.CommandTests
             _dumpDataService.Setup(m => m.GetNationByName(It.Is<string>(m => m.ToLower() == "olvaria"))).Returns(new Data.Models.Dump.DumpNation() { UnescapedName = "Olvaria" });
             _dumpDataService.Setup(m => m.GetWANationsByRegionName(It.IsAny<string>())).Returns(Enumerable.Repeat(new DumpNation() { }, 4).ToList());
             _dumpDataService.Setup(m => m.GetEndoSumByRegionName(It.IsAny<string>())).Returns(4);
-            var collection = ConfigureServices();
+            var collection = ConfigureServices(_requestDispatcher);
             _serviceProvider = collection.BuildServiceProvider();
-            var message = new Message(0, "region Testregionia", new ConsoleMessageChannel());
+            var slashCommand = BaseCommandTests.GetSlashCommand(new());
+            var message = new Message(0, "region Testregionia", new ConsoleMessageChannel(), slashCommand.Object);
             var command = new RegionStatsCommand(_serviceProvider);
             var nstatsXmlResult = XDocument.Load(Path.Combine("TestData", "testregionia-region-stats.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: nstatsXmlResult);
             var rofficersXmlResult = XDocument.Load(Path.Combine("TestData", "testregionia-officers.xml"));
-            TestRequestDispatcher.PrepareNextRequest(response: rofficersXmlResult);
+            _requestDispatcher.PrepareNextRequest(response: rofficersXmlResult);
             var response = await command.Execute(message);
             response.Status.Should().Be(CommandStatus.Success);
         }
         [Fact]
-        public override Task TestExecuteWithErrors()
+        public async override Task TestExecuteWithErrors()
         {
-            return Task.CompletedTask;
+            var collection = ConfigureServices(_requestDispatcher);
+            _serviceProvider = collection.BuildServiceProvider();
+            _ = new RegionStatsCommand();
+            var command = new RegionStatsCommand(_serviceProvider);
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await command.Execute(null));
+
+            _dumpDataService.SetupGet(m => m.Status).Returns(Enums.DumpDataStatus.Updating);
+            collection = ConfigureServices(_requestDispatcher);
+            _serviceProvider = collection.BuildServiceProvider();
+            command = new RegionStatsCommand(_serviceProvider);
+            var message = new Message(0, "region Testregionia", new ConsoleMessageChannel());
+            var response = await command.Execute(message);
+            response.Status.Should().Be(CommandStatus.Error);
+            response.Content.Should().Contain("Dump Information is currently updating.");
+
+            _dumpDataService.SetupGet(m => m.Status).Returns(Enums.DumpDataStatus.Error);
+            collection = ConfigureServices(_requestDispatcher);
+            _serviceProvider = collection.BuildServiceProvider();
+            command = new RegionStatsCommand(_serviceProvider);
+            response = await command.Execute(message);
+            response.Status.Should().Be(CommandStatus.Error);
+            response.Content.Should().Contain("Dump Data Service is in Status (Error)");
         }
     }
 }
