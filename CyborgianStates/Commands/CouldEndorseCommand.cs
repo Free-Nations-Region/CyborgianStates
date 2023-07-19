@@ -16,14 +16,15 @@ using System.Threading.Tasks;
 
 namespace CyborgianStates.Commands
 {
-    public class CouldEndorseCommand : ICommand
+    public class CouldEndorseCommand : BaseCommand
     {
         private readonly AppSettings _config;
         private readonly IResponseBuilder _responseBuilder;
         private readonly IDumpDataService _dumpDataService;
+        private readonly DumpRetrievalBackgroundService _dumpRetrievalBackgroundService;
         private readonly ILogger _logger;
         private CancellationToken token;
-        
+
         public CouldEndorseCommand() : this(Program.ServiceProvider)
         {
         }
@@ -34,54 +35,78 @@ namespace CyborgianStates.Commands
             _config = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
             _responseBuilder = serviceProvider.GetRequiredService<IResponseBuilder>();
             _dumpDataService = serviceProvider.GetRequiredService<IDumpDataService>();
+            _dumpRetrievalBackgroundService = serviceProvider.GetRequiredService<DumpRetrievalBackgroundService>();
         }
 
-        public async Task<CommandResponse> Execute(Message message)
+        public override async Task<CommandResponse> Execute(Message message)
         {
             if (message is null)
             {
-                throw new ArgumentException(nameof(message));
+                throw new ArgumentException(null, nameof(message));
             }
 
+            var nationName = GetNationName(message);
             try
             {
-                _logger.Debug("{Message}", message.Content);
-                var parameters = message.Content.Split(" ").Skip(1);
+                await message.DeferAsync().ConfigureAwait(false);
+                if (nationName == null)
+                {
+                    _logger.Error("Required parameter 'nationName' was not specified.");
+                    return await FailCommandAsync(message, "Required parameter 'nationName' was not specified.").ConfigureAwait(false);
+                }
 
-                // Checks for parameter count and extracts the first parameter or throws an exception.
-                string nation = parameters.Count() == 1
-                    ? Helpers.ToID(string.Join(" ", parameters))
-                    : throw new Exception();
-
-                await ProcessResultAsync(message, nation).ConfigureAwait(true);
+                await ProcessResultAsync(message, nationName).ConfigureAwait(true);
 
                 CommandResponse commandResponse = _responseBuilder.Build();
-                await message.Channel.ReplyToAsync(message, commandResponse).ConfigureAwait(false);
+                await message.ReplyAsync(commandResponse).ConfigureAwait(false);
                 return commandResponse;
             }
             catch (InvalidOperationException e)
             {
-                _logger.Error("Found nation is not apart of the World Assembly. Error: {Error}",e.ToString());
-                return await FailCommandAsync(message, "Specified nation is not a WA member.").ConfigureAwait(false);
+                _logger.Error(e, "Found nation '{name}' is not apart of the World Assembly.", nationName);
+                return await FailCommandAsync(message, $"Specified nation '{nationName}' is not a WA member.").ConfigureAwait(false);
             }
-            catch (NullReferenceException e)
+            catch (KeyNotFoundException e)
             {
-                _logger.Error("Nation cannot be found. Error: {Error}",e.ToString());
-                return await FailCommandAsync(message, "Specified nation cannot be found.").ConfigureAwait(false);
+                _logger.Error(e, "Nation '{name}' cannot be found.", nationName);
+                return await FailCommandAsync(message, $"Specified nation '{nationName}' cannot be found.").ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                _logger.Error("{Error}",e.ToString());
+                _logger.Error(e, "Error while executing CouldEndorseCommand");
                 return await FailCommandAsync(message,
                     "An unexpected error occured. Please contact the bot administrator.").ConfigureAwait(false);
             }
         }
-        
+
+        private static string GetNationName(Message message)
+        {
+            if (message.IsSlashCommand)
+            {
+                var commandParams = message.SlashCommand.Data.Options;
+                return (string) commandParams.FirstOrDefault(c => c.Name == "name")?.Value;
+            }
+            else if (message.Content.Contains(' '))
+            {
+                var parameters = message.Content.Split(" ").Skip(1);
+                return string.Join(" ", parameters);
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+
         public void SetCancellationToken(CancellationToken cancellationToken) => token = cancellationToken;
 
         private async Task ProcessResultAsync(Message message, string nation)
         {
             DumpNation dumpNation = _dumpDataService.GetNationByName(nation);
+            if (dumpNation == null)
+            {
+                throw new KeyNotFoundException(nation);
+            }
             if (!dumpNation.IsWAMember)
             {
                 throw new InvalidOperationException("Not a WA member."); // Guard clause
@@ -91,31 +116,30 @@ namespace CyborgianStates.Commands
             couldEndorse.RemoveAll(n => dumpNation.Endorsements.Contains(n.Name)); // Remove all nations that already have endorsements by the dumpNation.
             couldEndorse.Remove(dumpNation); // Remove the nation itself.
             // Convert the list of nations to a string.
-            List<string> couldEndorseNames = couldEndorse.Select(n => n.Name).ToList();
-            await SplitResponseAsync(message, dumpNation, couldEndorseNames).ConfigureAwait(true);
+            var couldEndorseNames = couldEndorse.Select(n => n.Name).ToList();
+            var responseSplitted = await SplitResponseAsync(message, dumpNation, couldEndorseNames).ConfigureAwait(true);
 
-            DumpRetrievalBackgroundService dumpService = new DumpRetrievalBackgroundService();
-            TimeSpan? hoursSinceUpdate = GetUpdateTime(dumpService, UpdateTime.Last);
-            TimeSpan? hoursUntilUpdate = GetUpdateTime(dumpService, UpdateTime.Next);
+            TimeSpan? hoursSinceUpdate = GetUpdateTime(_dumpRetrievalBackgroundService, UpdateTime.Last);
+            TimeSpan? hoursUntilUpdate = GetUpdateTime(_dumpRetrievalBackgroundService, UpdateTime.Next);
 
-            
-            _responseBuilder.Clear();
-            _responseBuilder.Success()
-                .WithTitle("Finished") // TODO: Bug likely in BaseResponseBuilder.Clear(). Title and Description are not cleared.
-                .WithDescription("") // TODO: Bug likely in BaseResponseBuilder.Clear(). Title and Description are not cleared.
-                .WithField("Datascource", "Dump", true)
-                .WithField("As of", $"{(hoursSinceUpdate.HasValue ? hoursSinceUpdate.Value.ToString("g") : "Unknown")} ago", true)
-                .WithField("Next update in", $"{(hoursUntilUpdate.HasValue ? hoursUntilUpdate.Value.ToString("g") : "Unknown")}", true)
-                .WithFooter(_config.Footer);
+            if (responseSplitted)
+            {
+                _responseBuilder.Success()
+                    .WithTitle("Finished")
+                    .WithFooter(_config.Footer);
+            }
+            _responseBuilder.WithField("Datasource", "Dump", true)
+                    .WithField("As of", $"{(hoursSinceUpdate.HasValue ? $"{hoursSinceUpdate.Value.Hours:00}:{hoursSinceUpdate.Value.Minutes:00}:{hoursSinceUpdate.Value.Seconds:00}" : "Unknown")} ago", true)
+                    .WithField("Next update in", $"{(hoursUntilUpdate.HasValue ? $"{hoursUntilUpdate.Value.Hours:00}:{hoursUntilUpdate.Value.Minutes:00}:{hoursUntilUpdate.Value.Seconds:00}" : "Unknown")}", true);
         }
-        
-        
-        private async Task SplitResponseAsync(Message message, DumpNation nation, List<string> endorsable)
+
+
+        private async Task<bool> SplitResponseAsync(Message message, DumpNation nation, List<string> endorsable)
         {
             const int limit = 3800; // Less than 4096 description limit to accommodate for ", " in string.Join.
-            
+
             Stack<string> endorse = new Stack<string>(endorsable.Select(n => $"[{n}](https://www.nationstates.net/nation={n})"));
-            
+
             int totalChars = endorse.Sum(n => n.Length);
             if (totalChars < limit) // Determine if we need to split the response at all.
             {
@@ -123,14 +147,15 @@ namespace CyborgianStates.Commands
                     .WithTitle($"{nation.Name} could endorse {endorsable.Count} more nations.")
                     .WithDescription(string.Join(", ", endorse))
                     .WithFooter(_config.Footer);
-                return;
+
+                return false;
             }
-            
+
             // Send out embeds in chunks of 3800 characters from the stack.
             while (endorse.Count > 0)
             {
                 // Get the next chunk of 3800 characters.
-                List<string> chunk = new List<string>();
+                var chunk = new List<string>();
                 int chunkSize = 0;
                 while (chunkSize < limit && endorse.Count > 0)
                 {
@@ -138,7 +163,7 @@ namespace CyborgianStates.Commands
                     chunk.Add(nextString);
                     chunkSize += nextString.Length;
                 }
-                
+
                 // Build the embed, send it, and reset it.
                 _responseBuilder.Success()
                     .WithTitle($"{nation.Name} could endorse {endorsable.Count} more nations.")
@@ -146,6 +171,7 @@ namespace CyborgianStates.Commands
                 await message.Channel.ReplyToAsync(message, _responseBuilder.Build()).ConfigureAwait(true);
                 _responseBuilder.Clear();
             }
+            return true;
         }
 
         private enum UpdateTime
@@ -153,13 +179,13 @@ namespace CyborgianStates.Commands
             Last,
             Next
         }
-        
+
         // TODO: This method should be moved elsewhere so that it can be used by other commands.
         private TimeSpan? GetUpdateTime(DumpRetrievalBackgroundService cronSchedule, UpdateTime nextOrLast)
         {
             var exp = new CronExpression(cronSchedule.CronSchedule) { TimeZone = cronSchedule.TimeZone };
             var next = exp.GetTimeAfter(DateTimeOffset.UtcNow);
-            var nextDistance = DateTimeOffset.UtcNow - next;
+            var nextDistance = next - DateTimeOffset.UtcNow;
             var last = exp.GetTimeBefore(DateTimeOffset.UtcNow);
             var lastDistance = last - DateTimeOffset.UtcNow;
 
@@ -167,19 +193,19 @@ namespace CyborgianStates.Commands
             {
                 return null;
             }
-            
+
             return nextOrLast == UpdateTime.Next ? nextDistance : lastDistance;
         }
 
-        private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
-        {
-            _responseBuilder.Clear();
-            var response = _responseBuilder.FailWithDescription(reason).Build();
-            await message.Channel.ReplyToAsync(message, response).ConfigureAwait(false);
-            return response;
-        }
+        //private async Task<CommandResponse> FailCommandAsync(Message message, string reason)
+        //{
+        //    _responseBuilder.Clear();
+        //    var response = _responseBuilder.FailWithDescription(reason).Build();
+        //    await message.ReplyToAsync(message, response).ConfigureAwait(false);
+        //    return response;
+        //}
     }
-    
-    
+
+
 }
 
