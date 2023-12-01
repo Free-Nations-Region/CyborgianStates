@@ -5,14 +5,14 @@ VisualStudioVersion = 17.1.32228.430
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CyborgianStates", "CyborgianStates.csproj", "{F631E931-1D4A-4FD6-9FD0-4DAED872D680}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CyborgianStates.Tests", "..\CyborgianStates.Tests\CyborgianStates.Tests.csproj", "{EEDCA772-9F98-493F-8782-306EEAC9BE50}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CyborgianStates.Tests", "CyborgianStates.Tests\CyborgianStates.Tests.csproj", "{EEDCA772-9F98-493F-8782-306EEAC9BE50}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{89FC00B7-FD9D-494B-93A9-8C54D86E7B1D}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NationStatesSharp", "..\NationStatesSharp\NationStatesSharp.csproj", "{ECD9DD25-D6D1-4D5B-BC2F-62169052F88F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NationStatesSharp", "NationStatesSharp\NationStatesSharp.csproj", "{ECD9DD25-D6D1-4D5B-BC2F-62169052F88F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
