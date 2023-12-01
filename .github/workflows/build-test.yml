@@ -22,7 +22,7 @@ jobs:
     - name: Build with dotnet
       working-directory: ./CyborgianStates.Tests
       run: |
-        dotnet build ../CyborgianStates/CyborgianStates.sln
+        dotnet build ../CyborgianStates.sln
         # temporary: copy settings so tests pass. this should be removed before release
         cp ../CyborgianStates/appsettings.json bin/Debug/net8.0/appsettings.development.json
     - name: Run tests
