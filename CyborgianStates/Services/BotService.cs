@@ -76,33 +76,41 @@ namespace CyborgianStates.Services
                 new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" })
                 {
                     Name = "nation",
-                    Description = "Gets you some cool info about a NationStates Nation.",
+                    Description = "Gets you some info about a NationStates Nation.",
                     IsSlashCommand = true,
                     SlashCommandParameters = new List<SlashCommandParameter>
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
-                    },
-                    IsGlobalSlashCommand = true
+                    }
                 });
             CommandHandler.Register(
                 new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" })
                 {
                     Name = "about",
                     Description = "Let me tell you something about myself.",
-                    IsSlashCommand = true,
-                    IsGlobalSlashCommand = true
+                    IsSlashCommand = true
                 });
             CommandHandler.Register(
                 new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" })
                 {
                     Name = "region",
-                    Description = "Get you some cool info about a NationStates Region.",
+                    Description = "Get you some info about a NationStates Region.",
                     IsSlashCommand = true,
                     SlashCommandParameters = new List<SlashCommandParameter>
                     {
                         new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
                     },
-                    IsGlobalSlashCommand = true
+                });
+            CommandHandler.Register(
+                new CommandDefinition(typeof(CouldEndorseCommand), new List<string>() { "couldendorse", "ce" })
+                {
+                    Name = "couldendorse",
+                    Description = "Tells you what nations you could endorse",
+                    IsSlashCommand = true,
+                    SlashCommandParameters = new List<SlashCommandParameter>
+                    {
+                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
+                    },
                 });
         }
 
@@ -122,32 +130,23 @@ namespace CyborgianStates.Services
             {
                 if (IsRunning)
                 {
-                    if (await IsRelevantAsync(e.Message).ConfigureAwait(false))
+                    var result = await CommandHandler.ExecuteAsync(e.Message).ConfigureAwait(false);
+                    if (result == null)
                     {
-                        var result = await CommandHandler.ExecuteAsync(e.Message).ConfigureAwait(false);
-                        if (result == null)
+                        _logger.Error($"Unknown command trigger {e.Message.Content}");
+                        if (e.Message.IsSlashCommand)
                         {
-                            _logger.Error($"Unknown command trigger {e.Message.Content}");
-                            if (e.Message.IsSlashCommand)
-                            {
-                                await e.Message.ReplyAsync("Hmm...That didn't work. I don't know what to do. This is not intended. Please contact BotAdmin to get this fixed.").ConfigureAwait(false);
-                            }
-                        }
-                        else
-                        {
-                            if (!e.Message.HasResponded)
-                            {
-                                await e.Message.ReplyAsync(result).ConfigureAwait(false);
-                            }
+                            await e.Message.ReplyAsync("Hmm...That didn't work. I don't know what to do. This is not intended. Please contact BotAdmin to get this fixed.").ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        if (e.Message.IsSlashCommand)
+                        if (!e.Message.HasResponded)
                         {
-                            await e.Message.ReplyAsync("Hmm...You don't seem to have the permission to execute that command. Sorry. :(").ConfigureAwait(false);
+                            await e.Message.ReplyAsync(result).ConfigureAwait(false);
                         }
                     }
+
                 }
             }
             catch (Exception ex)
@@ -159,7 +158,7 @@ namespace CyborgianStates.Services
         private void Register()
         {
             RegisterCommands();
-            _backgroundServiceRegistry.Register(new DumpRetrievalBackgroundService(_serviceProvider));
+            _backgroundServiceRegistry.Register(_serviceProvider.GetRequiredService<DumpRetrievalBackgroundService>());
         }
     }
 }

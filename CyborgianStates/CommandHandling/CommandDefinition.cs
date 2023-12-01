@@ -17,7 +17,6 @@ namespace CyborgianStates.CommandHandling
         public Type Type { get; }
 
         public bool IsSlashCommand { get; init; }
-        public bool IsGlobalSlashCommand { get; init; }
         public string Name { get; init; }
         public string Description { get; init; }
         public IReadOnlyList<SlashCommandParameter> SlashCommandParameters { get; init; } = new List<SlashCommandParameter>();
