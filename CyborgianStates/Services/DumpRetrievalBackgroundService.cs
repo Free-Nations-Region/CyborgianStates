@@ -106,7 +106,7 @@ namespace CyborgianStates.Services
                     {
                         _logger.Warning("Downloaded {@dumpType} dump stream does not differ from local {@dumpType} dump. {@dumpType} dump was not updated yet.", dumpType);
                         await RerunJobAsync(context).ConfigureAwait(false);
-                        _successfullyUpdated = false;
+                        _successfullyUpdated = true;
                     }
                 }
             }

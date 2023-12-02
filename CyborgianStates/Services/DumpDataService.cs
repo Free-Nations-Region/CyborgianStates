@@ -26,9 +26,9 @@ namespace CyborgianStates.Services
             _logger = Log.Logger.ForContext<DumpDataService>();
             Status = DumpDataStatus.Empty;
         }
-        public ImmutableHashSet<DumpRegion> Regions { get; private set; }
+        public ImmutableHashSet<DumpRegion> Regions { get; private set; } = ImmutableHashSet<DumpRegion>.Empty;
 
-        public ImmutableHashSet<DumpNation> Nations { get; private set; }
+        public ImmutableHashSet<DumpNation> Nations { get; private set; } = ImmutableHashSet<DumpNation>.Empty;
 
         public DumpDataStatus Status { get; private set; }
 
@@ -59,7 +59,7 @@ namespace CyborgianStates.Services
             try
             {
                 _logger.Debug("Extracting regions-dump stream to DumpRegion collection.");
-                using (var fileStream = new FileStream(_dumpRetrievalService.GetDumpFileNameByDumpType(DumpType.Regions), FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var fileStream = new FileStream(Path.Combine(AppContext.BaseDirectory, _dumpRetrievalService.GetDumpFileNameByDumpType(DumpType.Regions)), FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     using (var stream = new GZipStream(fileStream, CompressionMode.Decompress))
                     {
@@ -92,7 +92,7 @@ namespace CyborgianStates.Services
             try
             {
                 _logger.Debug("Extracting nations-dump stream to DumpRegion collection.");
-                using (var fileStream = new FileStream(_dumpRetrievalService.GetDumpFileNameByDumpType(DumpType.Nations), FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var fileStream = new FileStream(Path.Combine(AppContext.BaseDirectory, _dumpRetrievalService.GetDumpFileNameByDumpType(DumpType.Nations)), FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     using (var stream = new GZipStream(fileStream, CompressionMode.Decompress))
                     {

@@ -16,26 +16,17 @@ using System.Threading.Tasks;
 
 namespace CyborgianStates.Commands
 {
-    public class CouldEndorseCommand : BaseCommand
+    public class CouldEndorseCommand(IServiceProvider serviceProvider) : BaseCommand
     {
-        private readonly AppSettings _config;
-        private readonly IResponseBuilder _responseBuilder;
-        private readonly IDumpDataService _dumpDataService;
-        private readonly DumpRetrievalBackgroundService _dumpRetrievalBackgroundService;
-        private readonly ILogger _logger;
+        private readonly AppSettings _config = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
+        private readonly IResponseBuilder _responseBuilder = serviceProvider.GetRequiredService<IResponseBuilder>();
+        private readonly IDumpDataService _dumpDataService = serviceProvider.GetRequiredService<IDumpDataService>();
+        private readonly DumpRetrievalBackgroundService _dumpRetrievalBackgroundService = serviceProvider.GetRequiredService<DumpRetrievalBackgroundService>();
+        private readonly ILogger _logger = Log.ForContext<CouldEndorseCommand>();
         private CancellationToken token;
 
         public CouldEndorseCommand() : this(Program.ServiceProvider)
         {
-        }
-
-        public CouldEndorseCommand(IServiceProvider serviceProvider)
-        {
-            _logger = Log.ForContext<CouldEndorseCommand>();
-            _config = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
-            _responseBuilder = serviceProvider.GetRequiredService<IResponseBuilder>();
-            _dumpDataService = serviceProvider.GetRequiredService<IDumpDataService>();
-            _dumpRetrievalBackgroundService = serviceProvider.GetRequiredService<DumpRetrievalBackgroundService>();
         }
 
         public override async Task<CommandResponse> Execute(Message message)
@@ -69,7 +60,7 @@ namespace CyborgianStates.Commands
             catch (KeyNotFoundException e)
             {
                 _logger.Error(e, "Nation '{name}' cannot be found.", nationName);
-                return await FailCommandAsync(message, $"Specified nation '{nationName}' cannot be found.").ConfigureAwait(false);
+                return await FailCommandAsync(message, $"Specified nation '{nationName}' could not be found.").ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -113,7 +104,7 @@ namespace CyborgianStates.Commands
             }
 
             List<DumpNation> couldEndorse = _dumpDataService.GetWANationsByRegionName(dumpNation.RegionName); // Get all WA nations in the same region.
-            couldEndorse.RemoveAll(n => dumpNation.Endorsements.Contains(n.Name)); // Remove all nations that already have endorsements by the dumpNation.
+            couldEndorse.RemoveAll(n => n.Endorsements.Contains(dumpNation.Name)); // Remove all nations that already have endorsements by the dumpNation.
             couldEndorse.Remove(dumpNation); // Remove the nation itself.
             // Convert the list of nations to a string.
             var couldEndorseNames = couldEndorse.Select(n => n.Name).ToList();

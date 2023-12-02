@@ -215,11 +215,6 @@ namespace CyborgianStates.MessageHandling
             catch (Exception ex)
             {
                 _logger.Fatal(ex, "Unhandeled exception in SlashCommandHandler occured.");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Error while executing SlashCommand");
             }
         }
 

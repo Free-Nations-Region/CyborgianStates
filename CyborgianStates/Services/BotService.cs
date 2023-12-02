@@ -59,7 +59,7 @@ namespace CyborgianStates.Services
                 var hash = await CalculateHashFromStreamAsync(stream).ConfigureAwait(true);
                 using (var streamReader = new StreamReader(stream))
                 {
-                    if (hash == "fed40914bbcecf6487a7f8f5d4be349faa3cc5097146dd09f52058657f62d508")
+                    if (hash == "3937657f52d94041cc62ef3495b7d5952400d76c2e44b79982e1f0b521540b79")
                     {
                         stream.Position = 0;
                         var fileContent = await streamReader.ReadToEndAsync().ConfigureAwait(true);
