@@ -40,6 +40,7 @@ namespace CyborgianStates.MessageHandling
             _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
             _settings = options.Value;
             _dataAccessor = dataAccessor ?? throw new ArgumentNullException(nameof(dataAccessor));
+            _dataAccessor.ConnectionString = _settings.DbConnection;
         }
 
         public bool IsRunning { get; private set; }
@@ -51,6 +52,8 @@ namespace CyborgianStates.MessageHandling
         public async Task InitAsync()
         {
             _logger.Information("-- DiscordMessageHandler Init --");
+
+            
             SetupDiscordEvents();
             await _client.LoginAsync(TokenType.Bot, _settings.DiscordBotLoginToken).ConfigureAwait(false);
         }
@@ -198,41 +201,50 @@ namespace CyborgianStates.MessageHandling
 
         internal async Task HandleSlashCommandAsync(ISlashCommand arg)
         {
-            if (arg is not null)
+            try
             {
-                if (_logger.IsEnabled(LogEventLevel.Verbose))
+                if (arg is not null)
                 {
-                    _logger.Verbose("SlashCommand >> ChannelId: {channelId} {name} {author} {message}", arg.Channel?.Id, arg.User?.Username, arg.Channel?.Name, arg.CommandName);
+                    if (_logger.IsEnabled(LogEventLevel.Verbose))
+                    {
+                        _logger.Verbose("SlashCommand >> ChannelId: {channelId} {name} {author} {message}", arg.Channel?.Id, arg.User?.Username, arg.Channel?.Name, arg.CommandName);
+                    }
+                    var stringBuilder = new StringBuilder();
+                    stringBuilder.Append(arg.Data.Name);
+                    foreach (var opt in arg.Data.Options)
+                    {
+                        stringBuilder.Append(' ');
+                        stringBuilder.Append(opt.Name);
+                        stringBuilder.Append(": ");
+                        stringBuilder.Append(opt.Value);
+                    }
+                    var usage = new CommandUsage()
+                    {
+                        TraceId = arg.Id.ToString(),
+                        UserId = arg.User.Id,
+                        ChannelId = arg.Channel.Id,
+                        Command = stringBuilder.ToString(),
+                        CommandType = CommandType.SlashCommand,
+                        GuildId = arg.GuildId ?? 0,
+                        IsPrimaryGuild = true,
+                        IsDM = false,
+                        Timestamp = arg.CreatedAt.ToUnixTimeSeconds(),
+                    };
+                    
+                    await _dataAccessor.InsertAsync(usage).ConfigureAwait(false);
+                    MessageReceived?.Invoke(this,
+                        new MessageReceivedEventArgs(
+                            new Message(
+                                arg.User.Id,
+                                arg.Data.Name,
+                                new DiscordMessageChannel(arg.Channel, false),
+                                arg
+                    )));
                 }
-                var stringBuilder = new StringBuilder();
-                stringBuilder.Append(arg.Data.Name);
-                foreach (var opt in arg.Data.Options)
-                {
-                    stringBuilder.Append(' ');
-                    stringBuilder.Append(opt.Name);
-                    stringBuilder.Append(": ");
-                    stringBuilder.Append(opt.Value);
-                }
-                var usage = new CommandUsage()
-                {
-                    TraceId = arg.Id.ToString(),
-                    UserId = arg.User.Id,
-                    ChannelId = arg.Channel.Id,
-                    Command = stringBuilder.ToString(),
-                    CommandType = CommandType.SlashCommand,
-                    IsPrimaryGuild = true,
-                    IsDM = false,
-                    Timestamp = arg.CreatedAt.ToUnixTimeSeconds(),
-                };
-                await _dataAccessor.InsertAsync(usage).ConfigureAwait(false);
-                MessageReceived?.Invoke(this,
-                    new MessageReceivedEventArgs(
-                        new Message(
-                            arg.User.Id,
-                            arg.Data.Name,
-                            new DiscordMessageChannel(arg.Channel, false),
-                            arg
-                )));
+            }
+            catch (Exception ex)
+            {
+                _logger.Fatal(ex, "Unhandeled exception in SlashCommandHandler occured.");
             }
         }
 

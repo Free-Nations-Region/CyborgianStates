@@ -107,15 +107,11 @@ namespace CyborgianStates
 
             
             var sc = new SqliteConnection();
-
-
+            
             serviceCollection.AddSingleton(typeof(IRequestDispatcher), requestDispatcher);
             serviceCollection.AddSingleton<IBotService, BotService>();
-            
             serviceCollection.AddSingleton(typeof(IDbConnection), sc);
-
             serviceCollection.AddSingleton<IDataAccessor, DataAccessor>();
-            serviceCollection.AddSingleton<ISqlProvider, SqliteSqlProvider>();
             serviceCollection.AddSingleton<IDumpDataService, DumpDataService>();
             serviceCollection.AddSingleton<IDumpRetrievalService, DefaultDumpRetrievalService>();
             serviceCollection.AddQuartz();

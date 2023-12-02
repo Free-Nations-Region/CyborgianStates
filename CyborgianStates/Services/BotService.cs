@@ -2,6 +2,7 @@
 using CyborgianStates.Commands;
 using CyborgianStates.Interfaces;
 using CyborgianStates.MessageHandling;
+using DataAbstractions.Dapper;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,11 @@ using Quartz;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Pipes;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 
@@ -43,8 +49,43 @@ namespace CyborgianStates.Services
         {
             _logger.Information("BotService Initializing");
             Register();
+
+            var dataAccessor = _serviceProvider.GetRequiredService<IDataAccessor>();
+            var options = _serviceProvider.GetRequiredService<IOptions<AppSettings>>();
+            dataAccessor.ConnectionString = options?.Value?.DbConnection;
+
+            using (var stream = File.OpenRead(Path.Join("Data", "Sqlite", "Sqlite_CreateDb.sql")))
+            {
+                var hash = await CalculateHashFromStreamAsync(stream).ConfigureAwait(true);
+                using (var streamReader = new StreamReader(stream))
+                {
+                    if (hash == "fed40914bbcecf6487a7f8f5d4be349faa3cc5097146dd09f52058657f62d508")
+                    {
+                        stream.Position = 0;
+                        var fileContent = await streamReader.ReadToEndAsync().ConfigureAwait(true);
+                        _logger.Information("Seeding database");
+                        var result = await dataAccessor.ExecuteAsync(fileContent).ConfigureAwait(true);
+                    }
+                    else
+                    {
+                        _logger.Warning("Skipped seeding database. Hash mismatch.");
+                    }
+                }
+
+            }
             _messageHandler.MessageReceived += async (s, e) => await ProcessMessageAsync(e).ConfigureAwait(false);
             await _messageHandler.InitAsync().ConfigureAwait(false);
+        }
+
+        private async Task<string> CalculateHashFromStreamAsync(Stream fileStream)
+        {
+            using (var hasher = SHA256.Create())
+            {
+                var bytes = await hasher.ComputeHashAsync(fileStream).ConfigureAwait(false);
+                var hash = string.Concat(bytes.Select(b => b.ToString("x2")));
+                _logger.Verbose("Hash: {@existingHash}", hash);
+                return hash;
+            }
         }
 
         public async Task RunAsync()
@@ -71,21 +112,21 @@ namespace CyborgianStates.Services
         private static void RegisterCommands()
         {
             CommandHandler.Register(
-                new CommandDefinition(typeof(PingCommand), new List<string>() { "ping" }) { Name = "ping", Description = "Pong's you, lol.", IsSlashCommand = true, /*IsGlobalSlashCommand = true*/ });
+                new CommandDefinition(typeof(PingCommand), ["ping"]) { Name = "ping", Description = "Pong's you, lol.", IsSlashCommand = true, /*IsGlobalSlashCommand = true*/ });
             CommandHandler.Register(
-                new CommandDefinition(typeof(NationStatsCommand), new List<string>() { "nation", "n" })
+                new CommandDefinition(typeof(NationStatsCommand), ["nation", "n"])
                 {
                     Name = "nation",
                     Description = "Gets you some cool info about a NationStates Nation.",
                     IsSlashCommand = true,
                     SlashCommandParameters = new List<SlashCommandParameter>
                     {
-                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
+                        new(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = true, Description = "The nation name" }
                     },
                     IsGlobalSlashCommand = true
                 });
             CommandHandler.Register(
-                new CommandDefinition(typeof(AboutCommand), new List<string>() { "about" })
+                new CommandDefinition(typeof(AboutCommand), ["about"])
                 {
                     Name = "about",
                     Description = "Let me tell you something about myself.",
@@ -93,14 +134,14 @@ namespace CyborgianStates.Services
                     IsGlobalSlashCommand = true
                 });
             CommandHandler.Register(
-                new CommandDefinition(typeof(RegionStatsCommand), new List<string>() { "region", "r" })
+                new CommandDefinition(typeof(RegionStatsCommand), ["region", "r"])
                 {
                     Name = "region",
                     Description = "Get you some cool info about a NationStates Region.",
                     IsSlashCommand = true,
                     SlashCommandParameters = new List<SlashCommandParameter>
                     {
-                        new SlashCommandParameter(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
+                        new(){ Name = "name", Type = ApplicationCommandOptionType.String, IsRequired = false, Description = "The region name" }
                     },
                     IsGlobalSlashCommand = true
                 });

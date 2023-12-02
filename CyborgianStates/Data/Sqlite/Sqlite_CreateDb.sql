@@ -1,12 +1,12 @@
-CREATE TABLE "StatusEntry" (
+CREATE TABLE if not exists "StatusEntry" (
 	"Id"	INTEGER PRIMARY KEY AUTOINCREMENT,
 	"Nation"	INTEGER NOT NULL,
 	"Status"	INTEGER NOT NULL,
 	"Additional" TEXT,
 	"CreatedAt"	INTEGER NOT NULL,
-	"DisabledAt"	INTEGER,
+	"DisabledAt"	INTEGER
 );
-CREATE TABLE "CommandUsage" (
+CREATE TABLE if not exists "CommandUsage" (
 	"Id"	INTEGER PRIMARY KEY AUTOINCREMENT,
 	"TraceId"	TEXT,
 	"Timestamp"	INTEGER NOT NULL,

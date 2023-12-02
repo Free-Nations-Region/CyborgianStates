@@ -26,7 +26,7 @@ namespace CyborgianStates.Commands
                 .WithTitle("About CyborgianStates")
                 .WithField("Contact for this instance", _config.Contact)
                 .WithField("Github", "[CyborgianStates](https://github.com/Free-Nations-Region/CyborgianStates)")
-                .WithField("Developed by Drehtisch", $"Discord: Drehtisch#5680{Environment.NewLine}NationStates: [Tigerania](https://www.nationstates.net/nation=tigerania)")
+                .WithField("Developed by Drehtisch", $"Discord: dreh_161{Environment.NewLine}NationStates: [Tigerania](https://www.nationstates.net/nation=tigerania)")
                 .WithField("Support", "via [OpenCollective](https://opencollective.com/fnr)")
                 .WithDefaults(_config.Footer).Build();
             return Task.FromResult(response);
