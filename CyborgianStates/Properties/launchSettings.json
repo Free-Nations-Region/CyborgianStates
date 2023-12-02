@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CyborgianStates": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
