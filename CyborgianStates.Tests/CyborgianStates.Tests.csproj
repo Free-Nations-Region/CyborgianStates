@@ -42,4 +42,8 @@
   <ItemGroup>
     <Folder Include="Repositories\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="CommandTests\CouldEndorseCommand.cs" />
+  </ItemGroup>
 </Project>

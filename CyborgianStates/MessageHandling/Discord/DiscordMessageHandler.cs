@@ -46,7 +46,7 @@ namespace CyborgianStates.MessageHandling
         public bool IsRunning { get; private set; }
 
         private bool _isRegistered = false;
-        private const bool _skipUpdate = true;
+        private const bool _skipUpdate = false;
         public event EventHandler<MessageReceivedEventArgs> MessageReceived;
 
         public async Task InitAsync()
@@ -71,16 +71,8 @@ namespace CyborgianStates.MessageHandling
                     var guild = _client.GetGuild(AppSettings.PrimaryGuildId);
                     foreach (var command in commandsToBeRegistered)
                     {
-                        _logger.Information("Registering command '{commandName}' IsGlobal: {isGlobal}", command.Name, command.IsGlobalSlashCommand);
                         var slashCommand = GetSlashCommandFromCommandDefinition(command);
-                        if (command.IsGlobalSlashCommand)
-                        {
-                            await RegisterGlobalSlashCommand(restClient, guildCommands, globalCommands, command, slashCommand).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            await RegisterSlashCommand(restClient, guildCommands, globalCommands, command, slashCommand).ConfigureAwait(false);
-                        }
+                        await RegisterGlobalSlashCommandAsync(restClient, guildCommands, globalCommands, command, slashCommand).ConfigureAwait(false);
                     }
                 }
             }
@@ -90,43 +82,21 @@ namespace CyborgianStates.MessageHandling
             }
         }
 
-        private async Task RegisterSlashCommand(DiscordSocketRestClient restClient, IReadOnlyCollection<RestGuildCommand> guildCommands, IReadOnlyCollection<RestGlobalCommand> globalCommands, CommandDefinition command, SlashCommandProperties slashCommand)
-        {
-            if (guildCommands.Any(a => a.Name == command.Name))
-            {
-                var gCommand = guildCommands.First(a => a.Name == command.Name);
-                if (ShouldUpdateCommand(command, gCommand))
-                {
-                    _logger.Information("Command '{commandName}' is already registered as guild command for the primary guild. Updating.", command.Name);
-                    await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
-                }
-            }
-            else
-            {
-                if (globalCommands.Any(a => a.Name == command.Name))
-                {
-                    var gCommand = globalCommands.First(a => a.Name == command.Name);
-                    _logger.Information("Command '{commandName}' is already registered as global command. Deleting. Before recreating it as guild command.", command.Name);
-                    await gCommand.DeleteAsync().ConfigureAwait(false);
-                }
-                await restClient.CreateGuildCommand(slashCommand, AppSettings.PrimaryGuildId).ConfigureAwait(false);
-                _logger.Information("Command '{commandName}' created sucessfully.", command.Name);
-            }
-        }
-
-        private async Task RegisterGlobalSlashCommand(DiscordSocketRestClient restClient, IReadOnlyCollection<RestGuildCommand> guildCommands, IReadOnlyCollection<RestGlobalCommand> globalCommands, CommandDefinition command, SlashCommandProperties slashCommand)
+        private async Task RegisterGlobalSlashCommandAsync(DiscordSocketRestClient restClient, IReadOnlyCollection<RestGuildCommand> guildCommands, IReadOnlyCollection<RestGlobalCommand> globalCommands, CommandDefinition command, SlashCommandProperties slashCommand)
         {
             if (globalCommands.Any(a => a.Name == command.Name))
             {
                 var gCommand = globalCommands.First(a => a.Name == command.Name);
                 if (ShouldUpdateCommand(command, gCommand))
                 {
+
                     _logger.Information("Command '{commandName}' is already registered as global command. Updating.", command.Name);
                     await UpdateCommandAsync(slashCommand, gCommand).ConfigureAwait(false);
                 }
             }
             else
             {
+                _logger.Information("Registering command '{commandName}'", command.Name);
                 if (guildCommands.Any(a => a.Name == command.Name))
                 {
                     var gCommand = guildCommands.First(a => a.Name == command.Name);
@@ -165,7 +135,7 @@ namespace CyborgianStates.MessageHandling
                 var opt = command.Options.FirstOrDefault(opt => opt.Name == param.Name);
                 if (opt != null)
                 {
-                    paramUpdate = param.Type != opt.Type || param.Description != opt.Description || param.IsRequired != opt.IsRequired;
+                    paramUpdate = param.Type != opt.Type || param.Description != opt.Description || param.IsRequired != (opt.IsRequired ?? false);
                 }
             }
 
@@ -245,6 +215,11 @@ namespace CyborgianStates.MessageHandling
             catch (Exception ex)
             {
                 _logger.Fatal(ex, "Unhandeled exception in SlashCommandHandler occured.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error while executing SlashCommand");
             }
         }
 
@@ -270,36 +245,43 @@ namespace CyborgianStates.MessageHandling
 
         internal async Task HandleMessageAsync(IMessage message)
         {
-            if (message.Content.StartsWith(_settings.SeperatorChar))
+            try
             {
-                var usermsg = message as SocketUserMessage;
-
-                var msgContent = message.Content[1..];
-                var context = usermsg != null ? new SocketCommandContext(_client, usermsg) : null;
-                var isPrivate = usermsg != null && context.IsPrivate;
-
-                var usage = new CommandUsage()
+                if (message.Content.StartsWith(_settings.SeperatorChar))
                 {
-                    TraceId = message.Id.ToString(),
-                    UserId = message.Author.Id,
-                    ChannelId = message.Channel.Id,
-                    Command = msgContent,
-                    CommandType = CommandType.Message,
-                    IsPrimaryGuild = AppSettings.PrimaryGuildId == context.Guild?.Id,
-                    GuildId = AppSettings.PrimaryGuildId == context.Guild?.Id ? 0 : context.Guild?.Id ?? 0,
-                    IsDM = isPrivate,
-                    Timestamp = message.CreatedAt.ToUnixTimeSeconds()
-                };
-                await _dataAccessor.InsertAsync(usage).ConfigureAwait(false);
+                    var usermsg = message as SocketUserMessage;
 
-                MessageReceived?.Invoke(this,
-                    new MessageReceivedEventArgs(
-                        new Message(
-                            message.Author.Id,
-                            msgContent,
-                            new DiscordMessageChannel(message.Channel, isPrivate),
-                            context
-                )));
+                    var msgContent = message.Content[1..];
+                    var context = usermsg != null ? new SocketCommandContext(_client, usermsg) : null;
+                    var isPrivate = usermsg != null && context.IsPrivate;
+
+                    var usage = new CommandUsage()
+                    {
+                        TraceId = message.Id.ToString(),
+                        UserId = message.Author.Id,
+                        ChannelId = message.Channel.Id,
+                        Command = msgContent,
+                        CommandType = CommandType.Message,
+                        IsPrimaryGuild = AppSettings.PrimaryGuildId == context.Guild?.Id,
+                        GuildId = AppSettings.PrimaryGuildId == context.Guild?.Id ? 0 : context.Guild?.Id ?? 0,
+                        IsDM = isPrivate,
+                        Timestamp = message.CreatedAt.ToUnixTimeSeconds()
+                    };
+                    await _dataAccessor.InsertAsync(usage).ConfigureAwait(false);
+
+                    MessageReceived?.Invoke(this,
+                        new MessageReceivedEventArgs(
+                            new Message(
+                                message.Author.Id,
+                                msgContent,
+                                new DiscordMessageChannel(message.Channel, isPrivate),
+                                context
+                    )));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error while executing MessageCommand");
             }
         }
 

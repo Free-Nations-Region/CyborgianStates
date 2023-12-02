@@ -101,7 +101,7 @@ namespace CyborgianStates
                 throw new InvalidOperationException($"Unknown InputChannel '{InputChannel}'");
             }
 
-            
+
 
             var requestDispatcher = new RequestDispatcher($"({configuration.GetSection("Configuration").GetSection("Contact").Value})", Log.Logger);
 
@@ -116,6 +116,12 @@ namespace CyborgianStates
             serviceCollection.AddSingleton<IDumpRetrievalService, DefaultDumpRetrievalService>();
             serviceCollection.AddQuartz();
             serviceCollection.AddSingleton<IBackgroundServiceRegistry, BackgroundServiceRegistry>();
+            
+            serviceCollection.AddSingleton((serviceProvider) => 
+            {
+                return new DumpRetrievalBackgroundService(serviceProvider);
+            });
+
             return serviceCollection.BuildServiceProvider();
         }
 
@@ -123,7 +129,7 @@ namespace CyborgianStates
         {
             var logConfig = configuration.GetSection("Serilog");
             var logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
-            
+
             Log.Logger = logger;
             serviceCollection.AddLogging(builder =>
             {

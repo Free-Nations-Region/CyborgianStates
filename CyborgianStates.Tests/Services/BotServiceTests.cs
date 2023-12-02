@@ -62,6 +62,7 @@ namespace CyborgianStates.Tests.Services
             services.AddSingleton<IBackgroundServiceRegistry>(backgroundServiceRegistryMock.Object);
             services.AddSingleton<IDumpRetrievalService>(dumpRetrievalServiceMock.Object);
             services.AddSingleton<IDumpDataService>(dumpDataServiceMock.Object);
+            services.AddSingleton<DumpRetrievalBackgroundService>(sp => new DumpRetrievalBackgroundService(sp));
             return services.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true });
         }
 
