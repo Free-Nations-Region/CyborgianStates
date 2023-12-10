@@ -105,6 +105,10 @@ namespace CyborgianStates.Commands
 
             List<DumpNation> couldEndorse = _dumpDataService.GetWANationsByRegionName(dumpNation.RegionName); // Get all WA nations in the same region.
             couldEndorse.RemoveAll(n => n.Endorsements.Contains(dumpNation.Name)); // Remove all nations that already have endorsements by the dumpNation.
+            if (dumpNation.RegionName == "Hive")
+            {
+                couldEndorse.RemoveAll(n => n.Endorsements.Count >= 5 && !(n.Name == "dysonsphereconstructors" || n.Name == "a_puppet_of_my_nation")); //Enforce EndoCap, TODO: Remove fixed endocap and vanguards / protectors
+            }
             couldEndorse.Remove(dumpNation); // Remove the nation itself.
             // Convert the list of nations to a string.
             var couldEndorseNames = couldEndorse.Select(n => n.Name).ToList();
@@ -112,7 +116,7 @@ namespace CyborgianStates.Commands
 
             TimeSpan? hoursSinceUpdate = GetUpdateTime(_dumpRetrievalBackgroundService, UpdateTime.Last);
             TimeSpan? hoursUntilUpdate = GetUpdateTime(_dumpRetrievalBackgroundService, UpdateTime.Next);
-
+            //TODO: List nations endorsed above endo cap
             if (responseSplitted)
             {
                 _responseBuilder.Success()

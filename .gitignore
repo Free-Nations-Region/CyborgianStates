@@ -354,3 +354,5 @@ appsettings.production.json
 .idea
 *.db
 *.db-journal
+CyborgianStates/nations.xml.gz
+CyborgianStates/regions.xml.gz
