@@ -54,7 +54,7 @@ namespace CyborgianStates.Services
             var options = _serviceProvider.GetRequiredService<IOptions<AppSettings>>();
             dataAccessor.ConnectionString = options?.Value?.DbConnection;
 
-            using (var stream = File.OpenRead(Path.Join("Data", "Sqlite", "Sqlite_CreateDb.sql")))
+            using (var stream = File.OpenRead(Path.Join(AppContext.BaseDirectory,"Data", "Sqlite", "Sqlite_CreateDb.sql")))
             {
                 var hash = await CalculateHashFromStreamAsync(stream).ConfigureAwait(true);
                 using (var streamReader = new StreamReader(stream))
